@@ -60,7 +60,7 @@ else
 
     # Update version constant
     print_status "Updating version constant..."
-    sed -i '' "s/define( 'NDM_VERSION', '[0-9]\+\.[0-9]\+\.[0-9]\+' );/define( 'NDM_VERSION', '$NEW_VERSION' );/" nova-directory-manager.php
+    sed -i '' "s/define( *'NDM_VERSION', *'[^']*' *);/define( 'NDM_VERSION', '$NEW_VERSION' );/" nova-directory-manager.php
 
     # Verify changes
     print_status "Verifying version updates..."
