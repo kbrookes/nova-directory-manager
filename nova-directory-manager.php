@@ -1495,7 +1495,7 @@ class Nova_Directory_Manager {
 		// Output the form
 		?>
 		<div class="ndm-business-edit-form">
-			<h2><?php printf( __( 'Edit Business: %s', 'nova-directory-manager' ), get_the_title( $post_id ) ); ?></h2>
+			<h2 data-business-name="<?php echo esc_attr( get_the_title( $post_id ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></h2>
 			
 			<?php
 			acf_form( array(
