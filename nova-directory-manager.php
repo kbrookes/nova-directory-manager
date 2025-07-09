@@ -124,6 +124,9 @@ class Nova_Directory_Manager {
 		// ACF form processing
 		add_action( 'acf/save_post', array( $this, 'handle_acf_form_save' ), 10, 1 );
 		
+		// Auto-update post title from business name field
+		add_action( 'acf/save_post', array( $this, 'update_post_title_from_business_name' ), 20, 1 );
+		
 		// Activation and deactivation hooks
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
@@ -1495,12 +1498,10 @@ class Nova_Directory_Manager {
 		// Output the form
 		?>
 		<div class="ndm-business-edit-form">
-			<h2 data-business-name="<?php echo esc_attr( get_the_title( $post_id ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></h2>
-			
 			<?php
 			acf_form( array(
 				'post_id' => $post_id,
-				'post_title' => true,
+				'post_title' => false, // Hide the title field
 				'post_content' => false, // We don't use post content, only ACF fields
 				'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
 				'form_attributes' => array(
@@ -1715,6 +1716,32 @@ class Nova_Directory_Manager {
 
 		// Log successful save
 		error_log( 'NDM: ACF form save completed successfully for business ' . $post_id . ' by user ' . $current_user->ID );
+	}
+
+	/**
+	 * Update post title from business name field.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function update_post_title_from_business_name( $post_id ) {
+		// Only process business posts
+		if ( get_post_type( $post_id ) !== 'business' ) {
+			return;
+		}
+
+		// Get the business name field value
+		$business_name = get_field( 'business_name', $post_id );
+		
+		if ( ! empty( $business_name ) ) {
+			// Update the post title
+			wp_update_post( array(
+				'ID' => $post_id,
+				'post_title' => sanitize_text_field( $business_name ),
+				'post_name' => sanitize_title( $business_name ), // Also update the slug
+			) );
+			
+			error_log( "NDM: Updated post title to '$business_name' for post ID: $post_id" );
+		}
 	}
 }
 

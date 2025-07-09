@@ -28,15 +28,6 @@
     letter-spacing: 0.5px;
 }
 
-.ndm-business-edit-form h2::after {
-    content: attr(data-business-name);
-    display: block;
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-    margin-top: 4px;
-}
-
 .ndm-acf-form {
     margin-bottom: 30px;
 }
@@ -61,6 +52,7 @@
     color: #666 !important;
     margin-top: 4px !important;
     line-height: 1.4 !important;
+    text-transform: none !important;
 }
 
 .ndm-acf-form .acf-input input[type="text"],
@@ -241,7 +233,29 @@
 }
 
 .ndm-acf-form .acf-field p.description {
-    font-size: 1.4rem
+    font-size: 12px !important;
+    color: #666 !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    margin-top: 4px !important;
+    line-height: 1.4 !important;
+}
+
+/* Hide the post title field completely */
+.ndm-acf-form .acf-field[data-name="post_title"],
+.ndm-acf-form .acf-field[data-key="_post_title"] {
+    display: none !important;
+}
+
+/* Make business name field required */
+.ndm-acf-form .acf-field[data-name="business_name"] .acf-input input {
+    border-color: #0073aa !important;
+}
+
+.ndm-acf-form .acf-field[data-name="business_name"] .acf-label label::after {
+    content: " *";
+    color: #e74c3c;
+    font-weight: 700;
 }
 
 /* Business List Styles */
