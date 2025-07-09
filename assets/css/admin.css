@@ -1,0 +1,105 @@
+/**
+ * Admin styles for Business Directory Registration Manager
+ *
+ * @package BusinessDirectoryRegistrationManager
+ * @since 1.0.0
+ */
+
+.bdrm-admin-container {
+	display: flex;
+	gap: 20px;
+	margin-top: 20px;
+}
+
+.bdrm-admin-content {
+	flex: 1;
+	background: #fff;
+	padding: 20px;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+}
+
+.bdrm-admin-sidebar {
+	width: 300px;
+}
+
+.bdrm-info-box,
+.bdrm-help-box {
+	background: #fff;
+	padding: 20px;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.bdrm-info-box h3,
+.bdrm-help-box h3 {
+	margin-top: 0;
+	color: #23282d;
+	border-bottom: 1px solid #eee;
+	padding-bottom: 10px;
+}
+
+.bdrm-info-box p,
+.bdrm-help-box p {
+	margin: 10px 0;
+	line-height: 1.5;
+}
+
+.bdrm-info-box strong {
+	color: #0073aa;
+}
+
+.bdrm-help-box ol,
+.bdrm-help-box ul {
+	margin: 10px 0;
+	padding-left: 20px;
+}
+
+.bdrm-help-box li {
+	margin-bottom: 5px;
+	line-height: 1.4;
+}
+
+/* Status indicators */
+.bdrm-status-active {
+	color: #46b450;
+	font-weight: 600;
+}
+
+.bdrm-status-inactive {
+	color: #dc3232;
+	font-weight: 600;
+}
+
+/* Form styling */
+.form-table th {
+	width: 200px;
+}
+
+.form-table input[type="text"],
+.form-table select {
+	width: 100%;
+	max-width: 400px;
+}
+
+/* Capabilities checkboxes */
+.form-table fieldset label {
+	display: block;
+	margin-bottom: 8px;
+}
+
+.form-table fieldset input[type="checkbox"] {
+	margin-right: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 782px) {
+	.bdrm-admin-container {
+		flex-direction: column;
+	}
+	
+	.bdrm-admin-sidebar {
+		width: 100%;
+	}
+} 
