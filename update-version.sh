@@ -120,7 +120,6 @@ fi
 print_success "Version $NEW_VERSION has been successfully released!"
 print_status "GitHub release created at: https://github.com/kbrookes/nova-directory-manager/releases/tag/v$NEW_VERSION"
 print_status "Git Updater should detect the new version within 2-3 minutes."
-}
 
 # Function to print manual release instructions
 print_manual_release_instructions() {
