@@ -19,6 +19,7 @@
         init: function() {
             this.bindEvents();
             this.setupFormHandlers();
+            this.setupMobileAccordion();
         },
 
         /**
@@ -297,6 +298,45 @@
                 
                 if (value) {
                     $field.val(NDM.formatPhoneNumber(value));
+                }
+            });
+        },
+
+        /**
+         * Setup mobile accordion for ACF tabs
+         */
+        setupMobileAccordion: function() {
+            // Only run on mobile devices
+            if (window.innerWidth > 768) {
+                return;
+            }
+
+            // Handle tab clicks for accordion behavior
+            $(document).on('click', '.ndm-acf-form .acf-tab-wrap .acf-tab-group li a', function(e) {
+                e.preventDefault();
+                
+                var $tab = $(this);
+                var $tabGroup = $tab.closest('.acf-tab-group');
+                var $tabContent = $tabGroup.next('.acf-tab-content');
+                var isActive = $tab.parent().hasClass('active');
+                
+                // Close all tabs
+                $tabGroup.find('li').removeClass('active');
+                $tabContent.removeClass('active');
+                
+                // Open clicked tab if it wasn't active
+                if (!isActive) {
+                    $tab.parent().addClass('active');
+                    $tabContent.addClass('active');
+                }
+            });
+
+            // Handle window resize
+            $(window).on('resize', function() {
+                if (window.innerWidth > 768) {
+                    // Reset to normal tab behavior on desktop
+                    $('.ndm-acf-form .acf-tab-wrap .acf-tab-group li').removeClass('active');
+                    $('.ndm-acf-form .acf-tab-wrap .acf-tab-content').removeClass('active');
                 }
             });
         }

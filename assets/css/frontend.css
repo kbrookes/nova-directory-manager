@@ -28,6 +28,11 @@
     letter-spacing: 0.5px;
 }
 
+/* Remove extra border above tabs */
+.ndm-acf-form .acf-tab-wrap {
+    margin-top: -15px;
+}
+
 .ndm-acf-form {
     margin-bottom: 30px;
 }
@@ -424,6 +429,108 @@
     .ndm-business-edit-form {
         padding: 15px;
         margin: 10px;
+    }
+    
+    /* Accordion-style tabs on mobile */
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group {
+        display: flex !important;
+        flex-direction: column !important;
+        border-bottom: none !important;
+        gap: 5px !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group li {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group li a {
+        display: block !important;
+        width: 100% !important;
+        padding: 15px 20px !important;
+        border-radius: 8px !important;
+        background: #f8f9fa !important;
+        border: 1px solid #e9ecef !important;
+        color: #495057 !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        position: relative !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group li a::after {
+        content: "▼" !important;
+        position: absolute !important;
+        right: 20px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        font-size: 12px !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group li.active a {
+        background: var(--primary, #0073aa) !important;
+        color: #fff !important;
+        border-color: var(--primary, #0073aa) !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group li.active a::after {
+        transform: translateY(-50%) rotate(180deg) !important;
+    }
+    
+    /* Hide inactive tab content on mobile */
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group + .acf-tab-content {
+        display: none !important;
+    }
+    
+    .ndm-acf-form .acf-tab-wrap .acf-tab-group + .acf-tab-content.active {
+        display: block !important;
+        background: #fff !important;
+        border: 1px solid #e9ecef !important;
+        border-top: none !important;
+        border-radius: 0 0 8px 8px !important;
+        padding: 20px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Improve form field spacing on mobile */
+    .ndm-acf-form .acf-field {
+        margin-bottom: 25px !important;
+    }
+    
+    .ndm-acf-form .acf-input input[type="text"],
+    .ndm-acf-form .acf-input input[type="email"],
+    .ndm-acf-form .acf-input input[type="url"],
+    .ndm-acf-form .acf-input input[type="number"],
+    .ndm-acf-form .acf-input textarea,
+    .ndm-acf-form .acf-input select {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        padding: 15px 20px !important;
+    }
+    
+    .ndm-acf-form .acf-form-submit {
+        margin-top: 30px !important;
+        padding-top: 25px !important;
+    }
+    
+    .ndm-acf-form .acf-form-submit input[type="submit"] {
+        width: 100% !important;
+        padding: 15px 24px !important;
+        font-size: 18px !important;
+    }
+    
+    .ndm-form-actions {
+        margin-top: 25px !important;
+        padding-top: 25px !important;
+    }
+    
+    .ndm-form-actions .button {
+        display: block !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
+        padding: 15px 20px !important;
+        font-size: 16px !important;
     }
     
     .ndm-business-grid {
