@@ -236,7 +236,129 @@ class Nova_Directory_Manager {
 		$fluent_forms = $this->get_fluent_forms();
 		$post_types = $this->get_post_types();
 
-		include NDM_PLUGIN_DIR . 'admin/admin-page.php';
+		// Display admin page
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			
+			<?php settings_errors( 'ndm_messages' ); ?>
+
+			<div class="ndm-admin-container">
+				<div class="ndm-admin-main">
+					<form method="post" action="">
+						<?php wp_nonce_field( 'ndm_settings_nonce', 'ndm_nonce' ); ?>
+						
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row">
+										<label for="user_role_name"><?php _e( 'User Role Name', 'nova-directory-manager' ); ?></label>
+									</th>
+									<td>
+										<input type="text" id="user_role_name" name="user_role_name" value="<?php echo esc_attr( $this->settings['user_role_name'] ?? 'business_owner' ); ?>" class="regular-text" />
+										<p class="description"><?php _e( 'Internal name for the user role (e.g., business_owner)', 'nova-directory-manager' ); ?></p>
+									</td>
+								</tr>
+								
+								<tr>
+									<th scope="row">
+										<label for="user_role_display_name"><?php _e( 'User Role Display Name', 'nova-directory-manager' ); ?></label>
+									</th>
+									<td>
+										<input type="text" id="user_role_display_name" name="user_role_display_name" value="<?php echo esc_attr( $this->settings['user_role_display_name'] ?? 'Business Owner' ); ?>" class="regular-text" />
+										<p class="description"><?php _e( 'User-friendly name for the role (e.g., Business Owner)', 'nova-directory-manager' ); ?></p>
+									</td>
+								</tr>
+								
+								<tr>
+									<th scope="row">
+										<label for="fluent_form_id"><?php _e( 'Fluent Form', 'nova-directory-manager' ); ?></label>
+									</th>
+									<td>
+										<select id="fluent_form_id" name="fluent_form_id">
+											<option value=""><?php _e( 'Select a form...', 'nova-directory-manager' ); ?></option>
+											<?php foreach ( $fluent_forms as $form_id => $form_title ) : ?>
+												<option value="<?php echo esc_attr( $form_id ); ?>" <?php selected( $this->settings['fluent_form_id'] ?? '', $form_id ); ?>>
+													<?php echo esc_html( $form_title ); ?> (ID: <?php echo esc_html( $form_id ); ?>)
+												</option>
+											<?php endforeach; ?>
+										</select>
+										<p class="description"><?php _e( 'Select the Fluent Form that handles business registration', 'nova-directory-manager' ); ?></p>
+									</td>
+								</tr>
+								
+								<tr>
+									<th scope="row">
+										<label for="post_type"><?php _e( 'Post Type', 'nova-directory-manager' ); ?></label>
+									</th>
+									<td>
+										<select id="post_type" name="post_type">
+											<?php foreach ( $post_types as $post_type => $post_type_label ) : ?>
+												<option value="<?php echo esc_attr( $post_type ); ?>" <?php selected( $this->settings['post_type'] ?? 'business', $post_type ); ?>>
+													<?php echo esc_html( $post_type_label ); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+										<p class="description"><?php _e( 'Choose the post type for business listings', 'nova-directory-manager' ); ?></p>
+									</td>
+								</tr>
+								
+								<tr>
+									<th scope="row">
+										<label for="category_field"><?php _e( 'Category Field', 'nova-directory-manager' ); ?></label>
+									</th>
+									<td>
+										<input type="text" id="category_field" name="category_field" value="<?php echo esc_attr( $this->settings['category_field'] ?? 'business_category' ); ?>" class="regular-text" />
+										<p class="description"><?php _e( 'Form field name that contains category selection', 'nova-directory-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						
+						<?php submit_button( __( 'Save Settings', 'nova-directory-manager' ) ); ?>
+					</form>
+				</div>
+				
+				<div class="ndm-admin-sidebar">
+					<div class="ndm-admin-box">
+						<h3><?php _e( 'Test Functions', 'nova-directory-manager' ); ?></h3>
+						<p><?php _e( 'Use these buttons to test the plugin functionality:', 'nova-directory-manager' ); ?></p>
+						
+						<form method="post" action="<?php echo admin_url( 'admin.php' ); ?>">
+							<input type="hidden" name="action" value="test_ndm" />
+							<?php wp_nonce_field( 'test_ndm_nonce', 'ndm_test_nonce' ); ?>
+							<?php submit_button( __( 'Test Plugin', 'nova-directory-manager' ), 'secondary', 'test_plugin', false ); ?>
+						</form>
+						
+						<form method="post" action="<?php echo admin_url( 'admin.php' ); ?>" style="margin-top: 10px;">
+							<input type="hidden" name="action" value="test_ndm_fields" />
+							<?php wp_nonce_field( 'test_ndm_fields_nonce', 'ndm_test_fields_nonce' ); ?>
+							<?php submit_button( __( 'Test Form Fields', 'nova-directory-manager' ), 'secondary', 'test_form_fields', false ); ?>
+						</form>
+					</div>
+					
+					<div class="ndm-admin-box">
+						<h3><?php _e( 'Requirements', 'nova-directory-manager' ); ?></h3>
+						<ul>
+							<li><?php _e( 'Fluent Forms plugin', 'nova-directory-manager' ); ?></li>
+							<li><?php _e( 'Fluent Forms User Registration addon', 'nova-directory-manager' ); ?></li>
+							<li><?php _e( 'Fluent Forms Post Creation addon', 'nova-directory-manager' ); ?></li>
+							<li><?php _e( 'Advanced Custom Fields Pro (for frontend editing)', 'nova-directory-manager' ); ?></li>
+						</ul>
+					</div>
+					
+					<div class="ndm-admin-box">
+						<h3><?php _e( 'Shortcodes', 'nova-directory-manager' ); ?></h3>
+						<p><strong><?php _e( 'Business List:', 'nova-directory-manager' ); ?></strong></p>
+						<code>[ndm_business_list posts_per_page="10" show_status="true"]</code>
+						
+						<p><strong><?php _e( 'Business Edit Form:', 'nova-directory-manager' ); ?></strong></p>
+						<code>[ndm_business_edit_form post_id="123"]</code>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
