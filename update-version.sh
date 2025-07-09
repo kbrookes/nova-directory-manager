@@ -99,15 +99,39 @@ git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION - $COMMIT_MESSAGE"
 print_status "Pushing tag to GitHub..."
 git push origin "v$NEW_VERSION"
 
+# Create GitHub Release using GitHub API
+print_status "Creating GitHub Release..."
+
+# Check if GitHub CLI is available
+if command -v gh &> /dev/null; then
+    print_status "Using GitHub CLI to create release..."
+    gh release create "v$NEW_VERSION" --title "Version $NEW_VERSION" --notes "$COMMIT_MESSAGE" --repo kbrookes/nova-directory-manager
+    if [ $? -eq 0 ]; then
+        print_success "GitHub Release created successfully using GitHub CLI!"
+    else
+        print_warning "GitHub CLI failed. Please create release manually."
+        print_manual_release_instructions
+    fi
+else
+    print_warning "GitHub CLI not found. Please create release manually."
+    print_manual_release_instructions
+fi
+
 print_success "Version $NEW_VERSION has been successfully released!"
 print_status "GitHub release created at: https://github.com/kbrookes/nova-directory-manager/releases/tag/v$NEW_VERSION"
-print_status ""
-print_warning "IMPORTANT: You must now create a GitHub Release manually:"
-print_status "1. Go to: https://github.com/kbrookes/nova-directory-manager/releases"
-print_status "2. Click 'Draft a new release'"
-print_status "3. Select tag 'v$NEW_VERSION'"
-print_status "4. Add title: 'Version $NEW_VERSION'"
-print_status "5. Add description: '$COMMIT_MESSAGE'"
-print_status "6. Click 'Publish release'"
-print_status ""
-print_status "After publishing the release, Git Updater will detect the update within 2-3 minutes." 
+print_status "Git Updater should detect the new version within 2-3 minutes."
+}
+
+# Function to print manual release instructions
+print_manual_release_instructions() {
+    print_status ""
+    print_warning "IMPORTANT: You must now create a GitHub Release manually:"
+    print_status "1. Go to: https://github.com/kbrookes/nova-directory-manager/releases"
+    print_status "2. Click 'Draft a new release'"
+    print_status "3. Select tag 'v$NEW_VERSION'"
+    print_status "4. Add title: 'Version $NEW_VERSION'"
+    print_status "5. Add description: '$COMMIT_MESSAGE'"
+    print_status "6. Click 'Publish release'"
+    print_status ""
+    print_status "After publishing the release, Git Updater will detect the update within 2-3 minutes."
+} 
