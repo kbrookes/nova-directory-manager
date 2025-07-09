@@ -16,7 +16,6 @@
  * Network: false
  * GitHub Plugin URI: kbrookes/nova-directory-manager
  * GitHub Branch: main
- * Release Asset: true
  * Primary Branch: main
  *
  * @package NovaDirectoryManager
