@@ -75,6 +75,16 @@
     background: #eee;
 }
 
+.ndm-acf-form .acf-field .acf-label label {
+    color: var(--primary);
+    font-weight: 600;
+    text-transform: 700;
+}
+
+.ndm-acf-form .acf-field p.description {
+    font-size: 1.4rem
+}
+
 /* Business List Styles */
 .ndm-business-list {
     max-width: 1200px;
