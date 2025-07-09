@@ -28,9 +28,22 @@
     letter-spacing: 0.5px;
 }
 
-/* Remove extra border above tabs */
+/* Remove extra border above tabs and override ACF defaults */
 .ndm-acf-form .acf-tab-wrap {
     margin-top: -15px;
+    overflow: visible !important;
+}
+
+/* Additional ACF overrides */
+.ndm-acf-form .acf-fields > .acf-tab-wrap .acf-tab-group {
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.ndm-acf-form .acf-fields > .acf-tab-wrap {
+    overflow: visible !important;
+    border: none !important;
 }
 
 .ndm-acf-form {
@@ -88,10 +101,12 @@
 .ndm-acf-form .acf-tab-wrap {
     border: none !important;
     background: none !important;
+    overflow: visible !important; /* Override ACF's overflow:auto */
 }
 
 .ndm-acf-form .acf-tab-wrap .acf-tab-group {
     border-bottom: 1px solid #eee !important;
+    border-top: none !important; /* Override ACF's border-top */
     background: none !important;
 }
 
