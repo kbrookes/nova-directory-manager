@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 1.0.9
+ * Version: 1.0.10
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '1.0.9' );
+define( 'NDM_VERSION', '1.0.10' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -800,6 +800,12 @@ class Nova_Directory_Manager {
 
 			error_log( "NDM: Delayed role assignment - User {$user_id} current roles: " . print_r( $user->roles, true ) );
 			
+			// Check if user has administrative capabilities - if so, don't change their role
+			if ( $user->has_cap( 'manage_options' ) || $user->has_cap( 'administrator' ) ) {
+				error_log( "NDM: Admin user {$user_id} would be changed to {$role_name} in delayed assignment - preserving admin role" );
+				continue;
+			}
+			
 			// Force role assignment
 			$user->set_role( $role_name );
 			
@@ -845,6 +851,12 @@ class Nova_Directory_Manager {
 			}
 
 			error_log( "NDM: Cron role assignment - User {$user->ID} current roles: " . print_r( $user->roles, true ) );
+			
+			// Check if user has administrative capabilities - if so, don't change their role
+			if ( $user->has_cap( 'manage_options' ) || $user->has_cap( 'administrator' ) ) {
+				error_log( "NDM: Admin user {$user->ID} would be changed to {$role_name} in cron assignment - preserving admin role" );
+				continue;
+			}
 			
 			// Force role assignment
 			$user->set_role( $role_name );
@@ -1146,6 +1158,11 @@ class Nova_Directory_Manager {
 
 		// Check if user has a different role that needs to be changed
 		if ( ! empty( $user->roles ) && ! in_array( $role_name, $user->roles ) ) {
+			// Check if user has administrative capabilities - if so, don't change their role
+			if ( $user->has_cap( 'manage_options' ) || $user->has_cap( 'administrator' ) ) {
+				error_log( "NDM: Admin user {$user_id} would be changed to {$role_name} - preserving admin role" );
+				return;
+			}
 			error_log( "NDM: User {$user_id} has different roles: " . print_r( $user->roles, true ) . ". Changing to {$role_name}" );
 		}
 
@@ -1708,10 +1725,15 @@ class Nova_Directory_Manager {
 			error_log( 'NDM: Updated post author for business ' . $post_id . ' to user ' . $current_user->ID );
 		}
 
-		// Ensure the user has the business_owner role
+		// Ensure the user has the business_owner role, but protect admin users
 		if ( ! in_array( 'business_owner', $current_user->roles ) ) {
-			$this->assign_user_role( $current_user->ID );
-			error_log( 'NDM: Assigned business_owner role to user ' . $current_user->ID . ' during ACF save' );
+			// Check if user has administrative capabilities - if so, don't change their role
+			if ( $current_user->has_cap( 'manage_options' ) || $current_user->has_cap( 'administrator' ) ) {
+				error_log( 'NDM: Admin user ' . $current_user->ID . ' saved business ' . $post_id . ' - preserving admin role' );
+			} else {
+				$this->assign_user_role( $current_user->ID );
+				error_log( 'NDM: Assigned business_owner role to user ' . $current_user->ID . ' during ACF save' );
+			}
 		}
 
 		// Log successful save
