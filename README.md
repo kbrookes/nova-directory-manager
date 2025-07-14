@@ -271,6 +271,11 @@ The plugin provides two main shortcodes for frontend functionality:
 
 ## Changelog
 
+### Version 1.0.10
+- **SECURITY FIX**: Protected admin users from being converted to business_owner role
+- Added role protection in ACF form save, delayed role assignment, and cron role assignment
+- Admin users with 'manage_options' or 'administrator' capabilities are now preserved
+
 ### Version 1.0.0
 - Initial release
 - Fluent Forms integration

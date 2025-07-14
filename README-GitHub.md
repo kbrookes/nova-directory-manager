@@ -145,6 +145,11 @@ Create a page with:
 
 ## Changelog
 
+### Version 1.0.10
+- **SECURITY FIX**: Protected admin users from being converted to business_owner role
+- Added role protection in ACF form save, delayed role assignment, and cron role assignment
+- Admin users with 'manage_options' or 'administrator' capabilities are now preserved
+
 ### Version 1.0.1
 - Added frontend business editing with ACF Pro
 - Added business dashboard shortcodes
