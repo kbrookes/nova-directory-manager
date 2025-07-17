@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.1
+ * Version: 2.0.2
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.1' );
+define( 'NDM_VERSION', '2.0.2' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -231,10 +231,13 @@ class Nova_Directory_Manager {
 			return;
 		}
 
-		// Handle form submission
+		// Handle form submissions
 		if ( isset( $_POST['submit'] ) && check_admin_referer( 'ndm_settings_nonce', 'ndm_nonce' ) ) {
 			$this->save_settings();
 		}
+
+		// Handle offers admin actions
+		$this->handle_offers_admin_actions();
 
 		// Get available forms and post types
 		$fluent_forms = $this->get_fluent_forms();
@@ -326,8 +329,154 @@ class Nova_Directory_Manager {
 					</div>
 				<?php elseif ( $active_tab === 'offers' ) : ?>
 					<div class="ndm-admin-main">
-						<h2><?php _e( 'Offers Management (Coming Soon)', 'nova-directory-manager' ); ?></h2>
-						<p><?php _e( 'This section will allow you to configure offer pricing, manage offers, and more.', 'nova-directory-manager' ); ?></p>
+						<h2><?php _e( 'Offers Management', 'nova-directory-manager' ); ?></h2>
+						
+						<!-- Pricing Configuration -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Pricing Configuration', 'nova-directory-manager' ); ?></h3>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_offers_settings_nonce', 'ndm_offers_nonce' ); ?>
+								<input type="hidden" name="action" value="save_offers_settings" />
+								
+								<table class="form-table" role="presentation">
+									<tbody>
+										<tr>
+											<th scope="row">
+												<label for="offer_base_price"><?php _e( 'Base Price (USD)', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="offer_base_price" name="offer_base_price" value="<?php echo esc_attr( $this->get_offer_setting( 'base_price', 29.99 ) ); ?>" class="regular-text" step="0.01" min="0" />
+												<p class="description"><?php _e( 'Base price for paid offers', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="offer_duration_days"><?php _e( 'Default Duration (Days)', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="offer_duration_days" name="offer_duration_days" value="<?php echo esc_attr( $this->get_offer_setting( 'duration_days', 30 ) ); ?>" class="regular-text" min="1" />
+												<p class="description"><?php _e( 'Default number of days offers are active', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="offer_volume_discounts"><?php _e( 'Volume Discounts', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<textarea id="offer_volume_discounts" name="offer_volume_discounts" rows="4" class="large-text"><?php echo esc_textarea( $this->get_offer_setting( 'volume_discounts', "3:0.10\n5:0.15\n10:0.20" ) ); ?></textarea>
+												<p class="description"><?php _e( 'Format: quantity:discount_percentage (one per line). Example: 3:0.10 means 10% off for 3+ offers', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<?php submit_button( __( 'Save Pricing Settings', 'nova-directory-manager' ) ); ?>
+							</form>
+						</div>
+
+						<!-- Approval Workflow -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Approval Workflow', 'nova-directory-manager' ); ?></h3>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_offers_settings_nonce', 'ndm_offers_nonce' ); ?>
+								<input type="hidden" name="action" value="save_approval_settings" />
+								
+								<table class="form-table" role="presentation">
+									<tbody>
+										<tr>
+											<th scope="row">
+												<label for="require_approval"><?php _e( 'Require Admin Approval', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<label>
+													<input type="checkbox" id="require_approval" name="require_approval" value="1" <?php checked( $this->get_offer_setting( 'require_approval', true ) ); ?> />
+													<?php _e( 'All offers must be approved by an administrator before going live', 'nova-directory-manager' ); ?>
+												</label>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="auto_expire"><?php _e( 'Auto-Expire Offers', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<label>
+													<input type="checkbox" id="auto_expire" name="auto_expire" value="1" <?php checked( $this->get_offer_setting( 'auto_expire', true ) ); ?> />
+													<?php _e( 'Automatically expire offers after their duration period', 'nova-directory-manager' ); ?>
+												</label>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="expiry_notification_days"><?php _e( 'Expiry Notification (Days)', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="expiry_notification_days" name="expiry_notification_days" value="<?php echo esc_attr( $this->get_offer_setting( 'expiry_notification_days', 3 ) ); ?>" class="regular-text" min="0" />
+												<p class="description"><?php _e( 'Send notification to business owners this many days before offer expires', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<?php submit_button( __( 'Save Approval Settings', 'nova-directory-manager' ) ); ?>
+							</form>
+						</div>
+
+						<!-- Bulk Actions -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Bulk Actions', 'nova-directory-manager' ); ?></h3>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_offers_bulk_nonce', 'ndm_offers_bulk_nonce' ); ?>
+								<input type="hidden" name="action" value="bulk_offers_action" />
+								
+								<table class="form-table" role="presentation">
+									<tbody>
+										<tr>
+											<th scope="row">
+												<label for="bulk_action"><?php _e( 'Action', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<select id="bulk_action" name="bulk_action">
+													<option value=""><?php _e( 'Select an action...', 'nova-directory-manager' ); ?></option>
+													<option value="approve_all"><?php _e( 'Approve All Pending Offers', 'nova-directory-manager' ); ?></option>
+													<option value="expire_all"><?php _e( 'Expire All Active Offers', 'nova-directory-manager' ); ?></option>
+													<option value="extend_all"><?php _e( 'Extend All Offers by 30 Days', 'nova-directory-manager' ); ?></option>
+													<option value="delete_expired"><?php _e( 'Delete All Expired Offers', 'nova-directory-manager' ); ?></option>
+												</select>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<?php submit_button( __( 'Execute Bulk Action', 'nova-directory-manager' ), 'secondary' ); ?>
+							</form>
+						</div>
+
+						<!-- Statistics -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Offers Statistics', 'nova-directory-manager' ); ?></h3>
+							<?php $stats = $this->get_offers_statistics(); ?>
+							<table class="widefat">
+								<tbody>
+									<tr>
+										<td><strong><?php _e( 'Total Offers:', 'nova-directory-manager' ); ?></strong></td>
+										<td><?php echo esc_html( $stats['total'] ); ?></td>
+									</tr>
+									<tr>
+										<td><strong><?php _e( 'Active Offers:', 'nova-directory-manager' ); ?></strong></td>
+										<td><?php echo esc_html( $stats['active'] ); ?></td>
+									</tr>
+									<tr>
+										<td><strong><?php _e( 'Pending Approval:', 'nova-directory-manager' ); ?></strong></td>
+										<td><?php echo esc_html( $stats['pending'] ); ?></td>
+									</tr>
+									<tr>
+										<td><strong><?php _e( 'Expired Offers:', 'nova-directory-manager' ); ?></strong></td>
+										<td><?php echo esc_html( $stats['expired'] ); ?></td>
+									</tr>
+									<tr>
+										<td><strong><?php _e( 'Revenue Generated:', 'nova-directory-manager' ); ?></strong></td>
+										<td>$<?php echo esc_html( number_format( $stats['revenue'], 2 ) ); ?></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
 				<?php endif; ?>
 			</div>
@@ -1801,6 +1950,286 @@ class Nova_Directory_Manager {
 			'delete_published_offers'=> false,
 		);
 		add_role( 'advertiser', __( 'Advertiser', 'nova-directory-manager' ), $capabilities );
+	}
+
+	/**
+	 * Get offer setting with default fallback.
+	 *
+	 * @param string $key Setting key.
+	 * @param mixed  $default Default value.
+	 * @return mixed
+	 */
+	private function get_offer_setting( $key, $default = null ) {
+		$offer_settings = get_option( 'ndm_offer_settings', array() );
+		return isset( $offer_settings[ $key ] ) ? $offer_settings[ $key ] : $default;
+	}
+
+	/**
+	 * Save offer setting.
+	 *
+	 * @param string $key Setting key.
+	 * @param mixed  $value Setting value.
+	 */
+	private function save_offer_setting( $key, $value ) {
+		$offer_settings = get_option( 'ndm_offer_settings', array() );
+		$offer_settings[ $key ] = $value;
+		update_option( 'ndm_offer_settings', $offer_settings );
+	}
+
+	/**
+	 * Get offers statistics.
+	 *
+	 * @return array
+	 */
+	private function get_offers_statistics() {
+		$stats = array(
+			'total'    => 0,
+			'active'   => 0,
+			'pending'  => 0,
+			'expired'  => 0,
+			'revenue'  => 0.00,
+		);
+
+		// Get all offers
+		$offers = get_posts( array(
+			'post_type'      => 'offer',
+			'post_status'    => 'any',
+			'numberposts'    => -1,
+			'fields'         => 'ids',
+		) );
+
+		$stats['total'] = count( $offers );
+
+		foreach ( $offers as $offer_id ) {
+			$status = get_post_status( $offer_id );
+			$is_paid = get_field( 'is_paid_offer', $offer_id );
+			$price = get_field( 'offer_price', $offer_id );
+			$expiry_date = get_field( 'expiry_date', $offer_id );
+
+			// Count by status
+			if ( $status === 'publish' ) {
+				$stats['active']++;
+			} elseif ( $status === 'pending' ) {
+				$stats['pending']++;
+			} elseif ( $status === 'draft' ) {
+				$stats['pending']++;
+			}
+
+			// Check if expired
+			if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
+				$stats['expired']++;
+			}
+
+			// Calculate revenue (only for paid offers)
+			if ( $is_paid && $price ) {
+				$stats['revenue'] += floatval( $price );
+			}
+		}
+
+		return $stats;
+	}
+
+	/**
+	 * Handle offers admin form submissions.
+	 */
+	private function handle_offers_admin_actions() {
+		if ( ! isset( $_POST['action'] ) ) {
+			return;
+		}
+
+		$action = sanitize_text_field( $_POST['action'] );
+
+		switch ( $action ) {
+			case 'save_offers_settings':
+				if ( wp_verify_nonce( $_POST['ndm_offers_nonce'], 'ndm_offers_settings_nonce' ) ) {
+					$this->save_offers_pricing_settings();
+				}
+				break;
+
+			case 'save_approval_settings':
+				if ( wp_verify_nonce( $_POST['ndm_offers_nonce'], 'ndm_offers_settings_nonce' ) ) {
+					$this->save_offers_approval_settings();
+				}
+				break;
+
+			case 'bulk_offers_action':
+				if ( wp_verify_nonce( $_POST['ndm_offers_bulk_nonce'], 'ndm_offers_bulk_nonce' ) ) {
+					$this->execute_bulk_offers_action();
+				}
+				break;
+		}
+	}
+
+	/**
+	 * Save offers pricing settings.
+	 */
+	private function save_offers_pricing_settings() {
+		$this->save_offer_setting( 'base_price', floatval( $_POST['offer_base_price'] ?? 29.99 ) );
+		$this->save_offer_setting( 'duration_days', intval( $_POST['offer_duration_days'] ?? 30 ) );
+		$this->save_offer_setting( 'volume_discounts', sanitize_textarea_field( $_POST['offer_volume_discounts'] ?? '' ) );
+
+		add_settings_error(
+			'ndm_messages',
+			'ndm_offers_pricing_saved',
+			__( 'Pricing settings saved successfully!', 'nova-directory-manager' ),
+			'success'
+		);
+	}
+
+	/**
+	 * Save offers approval settings.
+	 */
+	private function save_offers_approval_settings() {
+		$this->save_offer_setting( 'require_approval', isset( $_POST['require_approval'] ) );
+		$this->save_offer_setting( 'auto_expire', isset( $_POST['auto_expire'] ) );
+		$this->save_offer_setting( 'expiry_notification_days', intval( $_POST['expiry_notification_days'] ?? 3 ) );
+
+		add_settings_error(
+			'ndm_messages',
+			'ndm_offers_approval_saved',
+			__( 'Approval settings saved successfully!', 'nova-directory-manager' ),
+			'success'
+		);
+	}
+
+	/**
+	 * Execute bulk offers action.
+	 */
+	private function execute_bulk_offers_action() {
+		$action = sanitize_text_field( $_POST['bulk_action'] ?? '' );
+		$count = 0;
+
+		switch ( $action ) {
+			case 'approve_all':
+				$count = $this->bulk_approve_offers();
+				break;
+			case 'expire_all':
+				$count = $this->bulk_expire_offers();
+				break;
+			case 'extend_all':
+				$count = $this->bulk_extend_offers();
+				break;
+			case 'delete_expired':
+				$count = $this->bulk_delete_expired_offers();
+				break;
+		}
+
+		if ( $count > 0 ) {
+			add_settings_error(
+				'ndm_messages',
+				'ndm_bulk_action_completed',
+				sprintf( __( 'Bulk action completed successfully! %d offers affected.', 'nova-directory-manager' ), $count ),
+				'success'
+			);
+		} else {
+			add_settings_error(
+				'ndm_messages',
+				'ndm_bulk_action_no_offers',
+				__( 'No offers were affected by this action.', 'nova-directory-manager' ),
+				'info'
+			);
+		}
+	}
+
+	/**
+	 * Bulk approve all pending offers.
+	 *
+	 * @return int Number of offers approved.
+	 */
+	private function bulk_approve_offers() {
+		$offers = get_posts( array(
+			'post_type'   => 'offer',
+			'post_status' => array( 'pending', 'draft' ),
+			'numberposts' => -1,
+			'fields'      => 'ids',
+		) );
+
+		$count = 0;
+		foreach ( $offers as $offer_id ) {
+			wp_update_post( array(
+				'ID'          => $offer_id,
+				'post_status' => 'publish',
+			) );
+			$count++;
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Bulk expire all active offers.
+	 *
+	 * @return int Number of offers expired.
+	 */
+	private function bulk_expire_offers() {
+		$offers = get_posts( array(
+			'post_type'   => 'offer',
+			'post_status' => 'publish',
+			'numberposts' => -1,
+			'fields'      => 'ids',
+		) );
+
+		$count = 0;
+		foreach ( $offers as $offer_id ) {
+			wp_update_post( array(
+				'ID'          => $offer_id,
+				'post_status' => 'draft',
+			) );
+			$count++;
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Bulk extend all offers by 30 days.
+	 *
+	 * @return int Number of offers extended.
+	 */
+	private function bulk_extend_offers() {
+		$offers = get_posts( array(
+			'post_type'   => 'offer',
+			'post_status' => 'any',
+			'numberposts' => -1,
+			'fields'      => 'ids',
+		) );
+
+		$count = 0;
+		foreach ( $offers as $offer_id ) {
+			$expiry_date = get_field( 'expiry_date', $offer_id );
+			if ( $expiry_date ) {
+				$new_expiry = date( 'Y-m-d', strtotime( $expiry_date . ' +30 days' ) );
+				update_field( 'expiry_date', $new_expiry, $offer_id );
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Bulk delete expired offers.
+	 *
+	 * @return int Number of offers deleted.
+	 */
+	private function bulk_delete_expired_offers() {
+		$offers = get_posts( array(
+			'post_type'   => 'offer',
+			'post_status' => 'any',
+			'numberposts' => -1,
+			'fields'      => 'ids',
+		) );
+
+		$count = 0;
+		foreach ( $offers as $offer_id ) {
+			$expiry_date = get_field( 'expiry_date', $offer_id );
+			if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
+				wp_delete_post( $offer_id, true );
+				$count++;
+			}
+		}
+
+		return $count;
 	}
 }
 
