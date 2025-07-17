@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.3
+ * Version: 2.0.4
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.3' );
+define( 'NDM_VERSION', '2.0.4' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -327,6 +327,43 @@ class Nova_Directory_Manager {
 							<?php submit_button( __( 'Save Settings', 'nova-directory-manager' ) ); ?>
 						</form>
 					</div>
+
+					<div class="ndm-admin-sidebar">
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Directory Setup', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Configure your business directory settings here. These settings control how business registrations are processed and what user roles are created.', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'User Role Configuration', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Role Name:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Internal identifier used by WordPress (e.g., business_owner)', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Display Name:', 'nova-directory-manager' ); ?></strong> <?php _e( 'User-friendly name shown in the admin (e.g., Business Owner)', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Fluent Forms Integration', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Select the Fluent Form that handles business registration. This form should collect business information and user details.', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Required Fields:', 'nova-directory-manager' ); ?></strong></p>
+							<ul>
+								<li><?php _e( 'Business name', 'nova-directory-manager' ); ?></li>
+								<li><?php _e( 'User email', 'nova-directory-manager' ); ?></li>
+								<li><?php _e( 'Category selection', 'nova-directory-manager' ); ?></li>
+							</ul>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Shortcodes', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Business Edit Form:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_business_edit_form]</code>
+							<p><strong><?php _e( 'Business List:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_business_list]</code>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Need Help?', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Check the documentation or contact support if you need assistance with the directory setup.', 'nova-directory-manager' ); ?></p>
+						</div>
+					</div>
 				<?php elseif ( $active_tab === 'offers' ) : ?>
 					<div class="ndm-admin-main">
 						<h2><?php _e( 'Offers Management', 'nova-directory-manager' ); ?></h2>
@@ -557,6 +594,56 @@ class Nova_Directory_Manager {
 									</tr>
 								</tbody>
 							</table>
+						</div>
+					</div>
+
+					<div class="ndm-admin-sidebar">
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Offers Management', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Configure pricing, approval workflows, and manage offers from this central location. Business owners and advertisers will create offers through the frontend.', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Currency & Pricing', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Currency:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Set the currency for all offer pricing (default: AUD)', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Default Duration:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Standard offer duration in days (default: 30)', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'User Type Pricing', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Advertisers:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Pay per offer with volume discounts', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Business Owners:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Get included offers with registration, then pay for additional offers', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Approval Workflow', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Admin Approval:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Require admin approval before offers go live', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Auto-Expire:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Automatically expire offers after their duration period', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Notifications:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Send expiry notifications to business owners', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Bulk Actions', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Perform mass operations on offers:', 'nova-directory-manager' ); ?></p>
+							<ul>
+								<li><?php _e( 'Approve all pending offers', 'nova-directory-manager' ); ?></li>
+								<li><?php _e( 'Expire all active offers', 'nova-directory-manager' ); ?></li>
+								<li><?php _e( 'Extend all offers by 30 days', 'nova-directory-manager' ); ?></li>
+								<li><?php _e( 'Delete all expired offers', 'nova-directory-manager' ); ?></li>
+							</ul>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Statistics', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Monitor your offers performance with real-time statistics including total offers, active offers, pending approvals, and revenue generated.', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Volume Discounts', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Format: quantity:discount_percentage', 'nova-directory-manager' ); ?></p>
+							<p><strong><?php _e( 'Example:', 'nova-directory-manager' ); ?></strong></p>
+							<code>3:0.10<br>5:0.15<br>10:0.20</code>
+							<p><?php _e( 'This means 10% off for 3+ offers, 15% off for 5+ offers, etc.', 'nova-directory-manager' ); ?></p>
 						</div>
 					</div>
 				<?php endif; ?>
