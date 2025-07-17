@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 1.0.10
+ * Version: 2.0.0
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '1.0.10' );
+define( 'NDM_VERSION', '2.0.0' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -154,6 +154,8 @@ class Nova_Directory_Manager {
 	 */
 	public function init() {
 		// Plugin initialization code here
+		$this->register_offers_post_type();
+		$this->create_advertiser_role();
 	}
 
 	/**
@@ -1764,6 +1766,71 @@ class Nova_Directory_Manager {
 			
 			error_log( "NDM: Updated post title to '$business_name' for post ID: $post_id" );
 		}
+	}
+
+	/**
+	 * Register the offers post type.
+	 */
+	private function register_offers_post_type() {
+		$labels = array(
+			'name'                  => _x( 'Offers', 'Post type general name', 'nova-directory-manager' ),
+			'singular_name'         => _x( 'Offer', 'Post type singular name', 'nova-directory-manager' ),
+			'menu_name'             => _x( 'Offers', 'Admin Menu text', 'nova-directory-manager' ),
+			'name_admin_bar'        => _x( 'Offer', 'Add New on Toolbar', 'nova-directory-manager' ),
+			'add_new'               => __( 'Add New', 'nova-directory-manager' ),
+			'add_new_item'          => __( 'Add New Offer', 'nova-directory-manager' ),
+			'new_item'              => __( 'New Offer', 'nova-directory-manager' ),
+			'edit_item'             => __( 'Edit Offer', 'nova-directory-manager' ),
+			'view_item'             => __( 'View Offer', 'nova-directory-manager' ),
+			'all_items'             => __( 'All Offers', 'nova-directory-manager' ),
+			'search_items'          => __( 'Search Offers', 'nova-directory-manager' ),
+			'parent_item_colon'     => __( 'Parent Offer:', 'nova-directory-manager' ),
+			'not_found'             => __( 'No offers found.', 'nova-directory-manager' ),
+			'not_found_in_trash'    => __( 'No offers found in Trash.', 'nova-directory-manager' ),
+		);
+
+		$args = array(
+			'labels'                => $labels,
+			'public'                => true,
+			'publicly_queryable'    => true,
+			'show_ui'               => true,
+			'show_in_menu'          => true,
+			'query_var'             => true,
+			'rewrite'               => array( 'slug' => 'offers' ),
+			'capability_type'       => 'post',
+			'has_archive'           => true,
+			'hierarchical'          => false,
+			'menu_position'         => null,
+			'menu_icon'             => 'dashicons-money-alt',
+			'supports'              => array( 'title', 'thumbnail' ),
+			'taxonomies'            => array( 'category' ),
+			'show_in_rest'          => true,
+		);
+
+		register_post_type( 'offer', $args );
+	}
+
+	/**
+	 * Create the advertiser user role.
+	 */
+	private function create_advertiser_role() {
+		remove_role( 'advertiser' );
+		$capabilities = array(
+			'read'                   => true,
+			'edit_posts'             => true,
+			'delete_posts'           => false,
+			'publish_posts'          => false,
+			'upload_files'           => true,
+			'edit_published_posts'   => true,
+			'delete_published_posts' => false,
+			// Custom capabilities for offers (future use)
+			'edit_offers'            => true,
+			'edit_published_offers'  => true,
+			'publish_offers'         => false, // Requires admin approval
+			'delete_offers'          => false,
+			'delete_published_offers'=> false,
+		);
+		add_role( 'advertiser', __( 'Advertiser', 'nova-directory-manager' ), $capabilities );
 	}
 }
 
