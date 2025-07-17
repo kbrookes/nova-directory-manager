@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.2
+ * Version: 2.0.3
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.2' );
+define( 'NDM_VERSION', '2.0.3' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -331,45 +331,126 @@ class Nova_Directory_Manager {
 					<div class="ndm-admin-main">
 						<h2><?php _e( 'Offers Management', 'nova-directory-manager' ); ?></h2>
 						
-						<!-- Pricing Configuration -->
+						<!-- Currency & General Settings -->
 						<div class="ndm-admin-section">
-							<h3><?php _e( 'Pricing Configuration', 'nova-directory-manager' ); ?></h3>
+							<h3><?php _e( 'Currency & General Settings', 'nova-directory-manager' ); ?></h3>
 							<form method="post" action="">
 								<?php wp_nonce_field( 'ndm_offers_settings_nonce', 'ndm_offers_nonce' ); ?>
-								<input type="hidden" name="action" value="save_offers_settings" />
+								<input type="hidden" name="action" value="save_general_settings" />
 								
 								<table class="form-table" role="presentation">
 									<tbody>
 										<tr>
 											<th scope="row">
-												<label for="offer_base_price"><?php _e( 'Base Price (USD)', 'nova-directory-manager' ); ?></label>
+												<label for="currency"><?php _e( 'Currency', 'nova-directory-manager' ); ?></label>
 											</th>
 											<td>
-												<input type="number" id="offer_base_price" name="offer_base_price" value="<?php echo esc_attr( $this->get_offer_setting( 'base_price', 29.99 ) ); ?>" class="regular-text" step="0.01" min="0" />
-												<p class="description"><?php _e( 'Base price for paid offers', 'nova-directory-manager' ); ?></p>
+												<select id="currency" name="currency">
+													<option value="AUD" <?php selected( $this->get_offer_setting( 'currency', 'AUD' ), 'AUD' ); ?>><?php _e( 'Australian Dollar (AUD)', 'nova-directory-manager' ); ?></option>
+													<option value="USD" <?php selected( $this->get_offer_setting( 'currency', 'AUD' ), 'USD' ); ?>><?php _e( 'US Dollar (USD)', 'nova-directory-manager' ); ?></option>
+													<option value="EUR" <?php selected( $this->get_offer_setting( 'currency', 'AUD' ), 'EUR' ); ?>><?php _e( 'Euro (EUR)', 'nova-directory-manager' ); ?></option>
+													<option value="GBP" <?php selected( $this->get_offer_setting( 'currency', 'AUD' ), 'GBP' ); ?>><?php _e( 'British Pound (GBP)', 'nova-directory-manager' ); ?></option>
+													<option value="CAD" <?php selected( $this->get_offer_setting( 'currency', 'AUD' ), 'CAD' ); ?>><?php _e( 'Canadian Dollar (CAD)', 'nova-directory-manager' ); ?></option>
+												</select>
+												<p class="description"><?php _e( 'Select the currency for offer pricing', 'nova-directory-manager' ); ?></p>
 											</td>
 										</tr>
 										<tr>
 											<th scope="row">
-												<label for="offer_duration_days"><?php _e( 'Default Duration (Days)', 'nova-directory-manager' ); ?></label>
+												<label for="default_duration_days"><?php _e( 'Default Duration (Days)', 'nova-directory-manager' ); ?></label>
 											</th>
 											<td>
-												<input type="number" id="offer_duration_days" name="offer_duration_days" value="<?php echo esc_attr( $this->get_offer_setting( 'duration_days', 30 ) ); ?>" class="regular-text" min="1" />
+												<input type="number" id="default_duration_days" name="default_duration_days" value="<?php echo esc_attr( $this->get_offer_setting( 'default_duration_days', 30 ) ); ?>" class="regular-text" min="1" />
 												<p class="description"><?php _e( 'Default number of days offers are active', 'nova-directory-manager' ); ?></p>
 											</td>
 										</tr>
+									</tbody>
+								</table>
+								<?php submit_button( __( 'Save General Settings', 'nova-directory-manager' ) ); ?>
+							</form>
+						</div>
+
+						<!-- Advertiser Pricing -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Advertiser Pricing', 'nova-directory-manager' ); ?></h3>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_offers_settings_nonce', 'ndm_offers_nonce' ); ?>
+								<input type="hidden" name="action" value="save_advertiser_pricing" />
+								
+								<table class="form-table" role="presentation">
+									<tbody>
 										<tr>
 											<th scope="row">
-												<label for="offer_volume_discounts"><?php _e( 'Volume Discounts', 'nova-directory-manager' ); ?></label>
+												<label for="advertiser_base_price"><?php _e( 'Base Price per 30 Days', 'nova-directory-manager' ); ?></label>
 											</th>
 											<td>
-												<textarea id="offer_volume_discounts" name="offer_volume_discounts" rows="4" class="large-text"><?php echo esc_textarea( $this->get_offer_setting( 'volume_discounts', "3:0.10\n5:0.15\n10:0.20" ) ); ?></textarea>
+												<input type="number" id="advertiser_base_price" name="advertiser_base_price" value="<?php echo esc_attr( $this->get_offer_setting( 'advertiser_base_price', 49.99 ) ); ?>" class="regular-text" step="0.01" min="0" />
+												<p class="description"><?php _e( 'Base price for advertisers per 30-day period', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="advertiser_volume_discounts"><?php _e( 'Volume Discounts', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<textarea id="advertiser_volume_discounts" name="advertiser_volume_discounts" rows="4" class="large-text"><?php echo esc_textarea( $this->get_offer_setting( 'advertiser_volume_discounts', "3:0.10\n5:0.15\n10:0.20" ) ); ?></textarea>
 												<p class="description"><?php _e( 'Format: quantity:discount_percentage (one per line). Example: 3:0.10 means 10% off for 3+ offers', 'nova-directory-manager' ); ?></p>
 											</td>
 										</tr>
 									</tbody>
 								</table>
-								<?php submit_button( __( 'Save Pricing Settings', 'nova-directory-manager' ) ); ?>
+								<?php submit_button( __( 'Save Advertiser Pricing', 'nova-directory-manager' ) ); ?>
+							</form>
+						</div>
+
+						<!-- Business Owner Pricing -->
+						<div class="ndm-admin-section">
+							<h3><?php _e( 'Business Owner Pricing', 'nova-directory-manager' ); ?></h3>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_offers_settings_nonce', 'ndm_offers_nonce' ); ?>
+								<input type="hidden" name="action" value="save_business_owner_pricing" />
+								
+								<table class="form-table" role="presentation">
+									<tbody>
+										<tr>
+											<th scope="row">
+												<label for="business_owner_included_offers"><?php _e( 'Included Offers', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="business_owner_included_offers" name="business_owner_included_offers" value="<?php echo esc_attr( $this->get_offer_setting( 'business_owner_included_offers', 2 ) ); ?>" class="regular-text" min="0" />
+												<p class="description"><?php _e( 'Number of free offers included with business registration', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="business_owner_max_duration"><?php _e( 'Maximum Duration (Days)', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="business_owner_max_duration" name="business_owner_max_duration" value="<?php echo esc_attr( $this->get_offer_setting( 'business_owner_max_duration', 60 ) ); ?>" class="regular-text" min="1" />
+												<p class="description"><?php _e( 'Maximum duration allowed for business owner offers', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="business_owner_additional_price"><?php _e( 'Additional Offer Price (per 30 days)', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<input type="number" id="business_owner_additional_price" name="business_owner_additional_price" value="<?php echo esc_attr( $this->get_offer_setting( 'business_owner_additional_price', 29.99 ) ); ?>" class="regular-text" step="0.01" min="0" />
+												<p class="description"><?php _e( 'Price for additional offers after included offers are used', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row">
+												<label for="business_owner_volume_discounts"><?php _e( 'Volume Discounts', 'nova-directory-manager' ); ?></label>
+											</th>
+											<td>
+												<textarea id="business_owner_volume_discounts" name="business_owner_volume_discounts" rows="4" class="large-text"><?php echo esc_textarea( $this->get_offer_setting( 'business_owner_volume_discounts', "3:0.15\n5:0.20\n10:0.25" ) ); ?></textarea>
+												<p class="description"><?php _e( 'Format: quantity:discount_percentage (one per line). Separate from included offers.', 'nova-directory-manager' ); ?></p>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<?php submit_button( __( 'Save Business Owner Pricing', 'nova-directory-manager' ) ); ?>
 							</form>
 						</div>
 
@@ -472,7 +553,7 @@ class Nova_Directory_Manager {
 									</tr>
 									<tr>
 										<td><strong><?php _e( 'Revenue Generated:', 'nova-directory-manager' ); ?></strong></td>
-										<td>$<?php echo esc_html( number_format( $stats['revenue'], 2 ) ); ?></td>
+										<td><?php echo esc_html( $this->get_currency_symbol() . number_format( $stats['revenue'], 2 ) ); ?></td>
 									</tr>
 								</tbody>
 							</table>
@@ -1977,6 +2058,23 @@ class Nova_Directory_Manager {
 	}
 
 	/**
+	 * Get currency symbol.
+	 *
+	 * @return string
+	 */
+	private function get_currency_symbol() {
+		$currency = $this->get_offer_setting( 'currency', 'AUD' );
+		$symbols = array(
+			'AUD' => 'A$',
+			'USD' => '$',
+			'EUR' => '€',
+			'GBP' => '£',
+			'CAD' => 'C$',
+		);
+		return isset( $symbols[ $currency ] ) ? $symbols[ $currency ] : $currency;
+	}
+
+	/**
 	 * Get offers statistics.
 	 *
 	 * @return array
@@ -2040,9 +2138,21 @@ class Nova_Directory_Manager {
 		$action = sanitize_text_field( $_POST['action'] );
 
 		switch ( $action ) {
-			case 'save_offers_settings':
+			case 'save_general_settings':
 				if ( wp_verify_nonce( $_POST['ndm_offers_nonce'], 'ndm_offers_settings_nonce' ) ) {
-					$this->save_offers_pricing_settings();
+					$this->save_general_settings();
+				}
+				break;
+
+			case 'save_advertiser_pricing':
+				if ( wp_verify_nonce( $_POST['ndm_offers_nonce'], 'ndm_offers_settings_nonce' ) ) {
+					$this->save_advertiser_pricing();
+				}
+				break;
+
+			case 'save_business_owner_pricing':
+				if ( wp_verify_nonce( $_POST['ndm_offers_nonce'], 'ndm_offers_settings_nonce' ) ) {
+					$this->save_business_owner_pricing();
 				}
 				break;
 
@@ -2061,17 +2171,48 @@ class Nova_Directory_Manager {
 	}
 
 	/**
-	 * Save offers pricing settings.
+	 * Save general settings.
 	 */
-	private function save_offers_pricing_settings() {
-		$this->save_offer_setting( 'base_price', floatval( $_POST['offer_base_price'] ?? 29.99 ) );
-		$this->save_offer_setting( 'duration_days', intval( $_POST['offer_duration_days'] ?? 30 ) );
-		$this->save_offer_setting( 'volume_discounts', sanitize_textarea_field( $_POST['offer_volume_discounts'] ?? '' ) );
+	private function save_general_settings() {
+		$this->save_offer_setting( 'currency', sanitize_text_field( $_POST['currency'] ?? 'AUD' ) );
+		$this->save_offer_setting( 'default_duration_days', intval( $_POST['default_duration_days'] ?? 30 ) );
 
 		add_settings_error(
 			'ndm_messages',
-			'ndm_offers_pricing_saved',
-			__( 'Pricing settings saved successfully!', 'nova-directory-manager' ),
+			'ndm_general_settings_saved',
+			__( 'General settings saved successfully!', 'nova-directory-manager' ),
+			'success'
+		);
+	}
+
+	/**
+	 * Save advertiser pricing settings.
+	 */
+	private function save_advertiser_pricing() {
+		$this->save_offer_setting( 'advertiser_base_price', floatval( $_POST['advertiser_base_price'] ?? 49.99 ) );
+		$this->save_offer_setting( 'advertiser_volume_discounts', sanitize_textarea_field( $_POST['advertiser_volume_discounts'] ?? '' ) );
+
+		add_settings_error(
+			'ndm_messages',
+			'ndm_advertiser_pricing_saved',
+			__( 'Advertiser pricing settings saved successfully!', 'nova-directory-manager' ),
+			'success'
+		);
+	}
+
+	/**
+	 * Save business owner pricing settings.
+	 */
+	private function save_business_owner_pricing() {
+		$this->save_offer_setting( 'business_owner_included_offers', intval( $_POST['business_owner_included_offers'] ?? 2 ) );
+		$this->save_offer_setting( 'business_owner_max_duration', intval( $_POST['business_owner_max_duration'] ?? 60 ) );
+		$this->save_offer_setting( 'business_owner_additional_price', floatval( $_POST['business_owner_additional_price'] ?? 29.99 ) );
+		$this->save_offer_setting( 'business_owner_volume_discounts', sanitize_textarea_field( $_POST['business_owner_volume_discounts'] ?? '' ) );
+
+		add_settings_error(
+			'ndm_messages',
+			'ndm_business_owner_pricing_saved',
+			__( 'Business owner pricing settings saved successfully!', 'nova-directory-manager' ),
 			'success'
 		);
 	}
