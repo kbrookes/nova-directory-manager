@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.4
+ * Version: 2.0.5
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.4' );
+define( 'NDM_VERSION', '2.0.5' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -644,6 +644,19 @@ class Nova_Directory_Manager {
 							<p><strong><?php _e( 'Example:', 'nova-directory-manager' ); ?></strong></p>
 							<code>3:0.10<br>5:0.15<br>10:0.20</code>
 							<p><?php _e( 'This means 10% off for 3+ offers, 15% off for 5+ offers, etc.', 'nova-directory-manager' ); ?></p>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'Advertiser Shortcodes', 'nova-directory-manager' ); ?></h3>
+							<p><strong><?php _e( 'Offer Creation Form:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_offer_form]</code>
+							<p><strong><?php _e( 'Advertiser Dashboard:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_advertiser_dashboard]</code>
+							<p><strong><?php _e( 'Offer Management:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_offer_management]</code>
+							<p><strong><?php _e( 'Payment History:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_payment_history]</code>
+							<p class="description"><?php _e( 'These shortcodes provide frontend interfaces for advertisers to manage their offers and payments.', 'nova-directory-manager' ); ?></p>
 						</div>
 					</div>
 				<?php endif; ?>
