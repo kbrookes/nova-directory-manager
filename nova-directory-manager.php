@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.5
+ * Version: 2.0.6
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.5' );
+define( 'NDM_VERSION', '2.0.6' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -118,6 +118,7 @@ class Nova_Directory_Manager {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
 		add_shortcode( 'ndm_business_edit_form', array( $this, 'business_edit_form_shortcode' ) );
 		add_shortcode( 'ndm_business_list', array( $this, 'business_list_shortcode' ) );
+		add_shortcode( 'ndm_offer_form', array( $this, 'offer_form_shortcode' ) );
 		add_action( 'wp_ajax_ndm_save_business', array( $this, 'ajax_save_business' ) );
 		add_action( 'wp_ajax_nopriv_ndm_save_business', array( $this, 'ajax_save_business' ) );
 		
@@ -130,6 +131,10 @@ class Nova_Directory_Manager {
 		// Activation and deactivation hooks
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
+
+		add_filter( 'acf/prepare_field/name=offer_business', array( $this, 'maybe_hide_offer_business_field' ) );
+		add_filter( 'acf/prepare_field/name=offer_category', array( $this, 'maybe_hide_or_require_offer_category_field' ) );
+		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
 	}
 
 	/**
@@ -357,6 +362,8 @@ class Nova_Directory_Manager {
 							<code>[ndm_business_edit_form]</code>
 							<p><strong><?php _e( 'Business List:', 'nova-directory-manager' ); ?></strong></p>
 							<code>[ndm_business_list]</code>
+							<p><strong><?php _e( 'Offer Form:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_offer_form]</code>
 						</div>
 
 						<div class="ndm-admin-box">
@@ -2471,6 +2478,141 @@ class Nova_Directory_Manager {
 		}
 
 		return $count;
+	}
+
+	/**
+	 * Shortcode handler for [ndm_offer_form].
+	 *
+	 * Usage: [ndm_offer_form post_id="123"]
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function offer_form_shortcode( $atts ) {
+		if ( ! function_exists( 'acf_form' ) ) {
+			return __( 'ACF Pro is required for this form.', 'nova-directory-manager' );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			return __( 'You must be logged in to create or edit offers.', 'nova-directory-manager' );
+		}
+
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'advertiser', 'business_owner' );
+		if ( ! array_intersect( $allowed_roles, $current_user->roles ) ) {
+			return __( 'You do not have permission to create or edit offers.', 'nova-directory-manager' );
+		}
+
+		$atts = shortcode_atts( array(
+			'post_id' => '',
+		), $atts );
+
+		$post_id = absint( $atts['post_id'] );
+		$editing = false;
+
+		if ( $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post || $post->post_type !== 'offer' ) {
+				return __( 'Offer not found.', 'nova-directory-manager' );
+			}
+			// Only allow editing if user is author or has manage_options
+			if ( $post->post_author != $current_user->ID && ! current_user_can( 'manage_options' ) ) {
+				return __( 'You do not have permission to edit this offer.', 'nova-directory-manager' );
+			}
+			$editing = true;
+		} else {
+			$post_id = 'new_post';
+		}
+
+		// Set up ACF form args
+		$args = array(
+			'post_id' => $post_id,
+			'field_groups' => array(), // Optionally specify ACF field group IDs for offers
+			'post_title' => true,
+			'post_content' => false,
+			'new_post' => array(
+				'post_type' => 'offer',
+				'post_status' => 'pending',
+			),
+			'submit_value' => $editing ? __( 'Update Offer', 'nova-directory-manager' ) : __( 'Create Offer', 'nova-directory-manager' ),
+			'return' => add_query_arg( 'offer_submitted', '1', get_permalink() ),
+			'updated_message' => __( 'Offer saved successfully!', 'nova-directory-manager' ),
+		);
+
+		// Optionally, auto-detect field group by post type
+		$field_groups = acf_get_field_groups( array( 'post_type' => 'offer' ) );
+		if ( ! empty( $field_groups ) ) {
+			$args['field_groups'] = wp_list_pluck( $field_groups, 'ID' );
+		}
+
+		ob_start();
+		if ( isset( $_GET['offer_submitted'] ) ) {
+			echo '<div class="ndm-offer-success">' . esc_html__( 'Offer saved successfully!', 'nova-directory-manager' ) . '</div>';
+		}
+		acf_form( $args );
+		return ob_get_clean();
+	}
+
+	/**
+	 * Conditionally hide the offer_business field for advertisers.
+	 *
+	 * @param array $field The ACF field array.
+	 * @return array|null
+	 */
+	public function maybe_hide_offer_business_field( $field ) {
+		if ( ! is_user_logged_in() ) {
+			return $field;
+		}
+		$current_user = wp_get_current_user();
+		if ( in_array( 'advertiser', $current_user->roles, true ) ) {
+			// Hide the field for advertisers
+			return null;
+		}
+		return $field;
+	}
+
+	/**
+	 * Conditionally hide or require the offer_category field.
+	 *
+	 * @param array $field The ACF field array.
+	 * @return array|null
+	 */
+	public function maybe_hide_or_require_offer_category_field( $field ) {
+		if ( ! is_user_logged_in() ) {
+			return $field;
+		}
+		$current_user = wp_get_current_user();
+		if ( in_array( 'business_owner', $current_user->roles, true ) ) {
+			// Hide the field for business owners
+			return null;
+		}
+		// For advertisers, make it required
+		$field['required'] = 1;
+		return $field;
+	}
+
+	/**
+	 * On offer save, if business owner, copy category terms from selected business to offer.
+	 *
+	 * @param int $post_id
+	 */
+	public function sync_offer_category_from_business( $post_id ) {
+		if ( get_post_type( $post_id ) !== 'offer' ) {
+			return;
+		}
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+		$current_user = wp_get_current_user();
+		if ( in_array( 'business_owner', $current_user->roles, true ) ) {
+			$business_id = get_field( 'offer_business', $post_id );
+			if ( $business_id ) {
+				$business_terms = wp_get_post_terms( $business_id, 'category', array( 'fields' => 'ids' ) );
+				if ( ! empty( $business_terms ) ) {
+					wp_set_post_terms( $post_id, $business_terms, 'category', false );
+				}
+			}
+		}
 	}
 }
 
