@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.7
+ * Version: 2.0.8
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.7' );
+define( 'NDM_VERSION', '2.0.8' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -135,9 +135,6 @@ class Nova_Directory_Manager {
 		add_filter( 'acf/prepare_field/name=offer_business', array( $this, 'maybe_hide_offer_business_field' ) );
 		add_filter( 'acf/prepare_field/name=offer_category', array( $this, 'maybe_hide_or_require_offer_category_field' ) );
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
-
-		add_filter( 'the_posts', array( $this, 'maybe_inject_acf_form_head' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_acf_scripts' ) );
 	}
 
 	/**
@@ -2527,32 +2524,55 @@ class Nova_Directory_Manager {
 			$post_id = 'new_post';
 		}
 
-		// Set up ACF form args
-		$args = array(
-			'post_id' => $post_id,
-			'field_groups' => array(), // Optionally specify ACF field group IDs for offers
-			'post_title' => true,
-			'post_content' => false,
-			'new_post' => array(
-				'post_type' => 'offer',
-				'post_status' => 'pending',
-			),
-			'submit_value' => $editing ? __( 'Update Offer', 'nova-directory-manager' ) : __( 'Create Offer', 'nova-directory-manager' ),
-			'return' => add_query_arg( 'offer_submitted', '1', get_permalink() ),
-			'updated_message' => __( 'Offer saved successfully!', 'nova-directory-manager' ),
-		);
+		// Start output buffering
+		ob_start();
 
-		// Optionally, auto-detect field group by post type
-		$field_groups = acf_get_field_groups( array( 'post_type' => 'offer' ) );
-		if ( ! empty( $field_groups ) ) {
-			$args['field_groups'] = wp_list_pluck( $field_groups, 'ID' );
+		// Add ACF form head (for conditionals, tabs, etc.)
+		acf_form_head();
+
+		// Optionally, specify the offer field group ID (replace with your actual group key)
+		$offer_field_group = 'group_offers_acf_fields'; // TODO: Replace with your actual field group key
+		$field_groups = array();
+		if ( function_exists( 'acf_get_field_group' ) && acf_get_field_group( $offer_field_group ) ) {
+			$field_groups = array( $offer_field_group );
+		} else {
+			// Fallback: auto-detect by post type
+			$auto_groups = acf_get_field_groups( array( 'post_type' => 'offer' ) );
+			if ( ! empty( $auto_groups ) ) {
+				$field_groups = wp_list_pluck( $auto_groups, 'ID' );
+			}
 		}
 
-		ob_start();
 		if ( isset( $_GET['offer_submitted'] ) ) {
 			echo '<div class="ndm-offer-success">' . esc_html__( 'Offer saved successfully!', 'nova-directory-manager' ) . '</div>';
 		}
-		acf_form( $args );
+
+		// Output the form
+		?>
+		<div class="ndm-offer-form">
+			<?php
+			acf_form( array(
+				'post_id' => $post_id,
+				'post_title' => true,
+				'post_content' => false,
+				'field_groups' => $field_groups,
+				'form_attributes' => array(
+					'class' => 'ndm-acf-form'
+				),
+				'html_before_fields' => '<div class="ndm-form-notices"></div>',
+				'html_after_fields' => '<div class="ndm-form-actions"></div>',
+				'submit_value' => $editing ? __( 'Update Offer', 'nova-directory-manager' ) : __( 'Create Offer', 'nova-directory-manager' ),
+				'updated_message' => __( 'Offer saved successfully!', 'nova-directory-manager' ),
+				'new_post' => array(
+					'post_type' => 'offer',
+					'post_status' => 'pending',
+				),
+				'return' => add_query_arg( 'offer_submitted', '1', get_permalink() ),
+			) );
+			?>
+		</div>
+		<?php
+
 		return ob_get_clean();
 	}
 
@@ -2613,41 +2633,6 @@ class Nova_Directory_Manager {
 				$business_terms = wp_get_post_terms( $business_id, 'category', array( 'fields' => 'ids' ) );
 				if ( ! empty( $business_terms ) ) {
 					wp_set_post_terms( $post_id, $business_terms, 'category', false );
-				}
-			}
-		}
-	}
-
-	/**
-	 * If [ndm_offer_form] is present, call acf_form_head() before output.
-	 *
-	 * @param array $posts
-	 * @return array
-	 */
-	public function maybe_inject_acf_form_head( $posts ) {
-		if ( empty( $posts ) ) {
-			return $posts;
-		}
-		global $wp_query;
-		if ( ! is_singular() ) {
-			return $posts;
-		}
-		$post = $posts[0];
-		if ( has_shortcode( $post->post_content, 'ndm_offer_form' ) ) {
-			add_action( 'wp_head', 'acf_form_head', 1 );
-		}
-		return $posts;
-	}
-
-	/**
-	 * Enqueue ACF scripts/styles if [ndm_offer_form] is present.
-	 */
-	public function maybe_enqueue_acf_scripts() {
-		if ( is_singular() ) {
-			global $post;
-			if ( isset( $post->post_content ) && has_shortcode( $post->post_content, 'ndm_offer_form' ) ) {
-				if ( function_exists( 'acf_enqueue_scripts' ) ) {
-					acf_enqueue_scripts();
 				}
 			}
 		}
