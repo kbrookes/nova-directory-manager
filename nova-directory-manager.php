@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.6
+ * Version: 2.0.7
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.6' );
+define( 'NDM_VERSION', '2.0.7' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -135,6 +135,9 @@ class Nova_Directory_Manager {
 		add_filter( 'acf/prepare_field/name=offer_business', array( $this, 'maybe_hide_offer_business_field' ) );
 		add_filter( 'acf/prepare_field/name=offer_category', array( $this, 'maybe_hide_or_require_offer_category_field' ) );
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
+
+		add_filter( 'the_posts', array( $this, 'maybe_inject_acf_form_head' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_acf_scripts' ) );
 	}
 
 	/**
@@ -2610,6 +2613,41 @@ class Nova_Directory_Manager {
 				$business_terms = wp_get_post_terms( $business_id, 'category', array( 'fields' => 'ids' ) );
 				if ( ! empty( $business_terms ) ) {
 					wp_set_post_terms( $post_id, $business_terms, 'category', false );
+				}
+			}
+		}
+	}
+
+	/**
+	 * If [ndm_offer_form] is present, call acf_form_head() before output.
+	 *
+	 * @param array $posts
+	 * @return array
+	 */
+	public function maybe_inject_acf_form_head( $posts ) {
+		if ( empty( $posts ) ) {
+			return $posts;
+		}
+		global $wp_query;
+		if ( ! is_singular() ) {
+			return $posts;
+		}
+		$post = $posts[0];
+		if ( has_shortcode( $post->post_content, 'ndm_offer_form' ) ) {
+			add_action( 'wp_head', 'acf_form_head', 1 );
+		}
+		return $posts;
+	}
+
+	/**
+	 * Enqueue ACF scripts/styles if [ndm_offer_form] is present.
+	 */
+	public function maybe_enqueue_acf_scripts() {
+		if ( is_singular() ) {
+			global $post;
+			if ( isset( $post->post_content ) && has_shortcode( $post->post_content, 'ndm_offer_form' ) ) {
+				if ( function_exists( 'acf_enqueue_scripts' ) ) {
+					acf_enqueue_scripts();
 				}
 			}
 		}
