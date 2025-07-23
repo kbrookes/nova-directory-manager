@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.17
+ * Version: 2.0.18
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.17' );
+define( 'NDM_VERSION', '2.0.18' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -134,6 +134,7 @@ class Nova_Directory_Manager {
 
 		add_filter( 'acf/prepare_field/name=offer_business', array( $this, 'maybe_hide_offer_business_field' ) );
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
+		add_action( 'acf/save_post', array( $this, 'ensure_offer_author' ), 10, 1 );
 		
 		// Ensure ACF fields are always registered for offers
 		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
@@ -2123,6 +2124,13 @@ class Nova_Directory_Manager {
 				$post_type_data = $post_types[0]; // Get the first (and only) post type
 				
 				// Convert ACF post type format to WordPress format
+				$supports = $post_type_data['supports'];
+				
+				// Ensure author support is included for offers
+				if ( $post_type_data['post_type'] === 'offer' && ! in_array( 'author', $supports ) ) {
+					$supports[] = 'author';
+				}
+				
 				$args = array(
 					'labels' => $post_type_data['labels'],
 					'public' => $post_type_data['public'],
@@ -2141,7 +2149,7 @@ class Nova_Directory_Manager {
 					'capabilities' => array(),
 					'map_meta_cap' => true,
 					'hierarchical' => $post_type_data['hierarchical'],
-					'supports' => $post_type_data['supports'],
+					'supports' => $supports,
 					'taxonomies' => $post_type_data['taxonomies'],
 					'has_archive' => $post_type_data['has_archive'],
 					'rewrite' => array(
@@ -2656,6 +2664,7 @@ class Nova_Directory_Manager {
 				'new_post' => array(
 					'post_type' => 'offer',
 					'post_status' => 'pending',
+					'post_author' => $current_user->ID,
 				),
 				'return' => add_query_arg( 'offer_submitted', '1', get_permalink() ),
 			) );
@@ -2863,6 +2872,34 @@ class Nova_Directory_Manager {
 		}
 		
 		return $field_groups;
+	}
+
+	/**
+	 * Ensure offer has the correct author assigned.
+	 *
+	 * @param int $post_id
+	 */
+	public function ensure_offer_author( $post_id ) {
+		if ( get_post_type( $post_id ) !== 'offer' ) {
+			return;
+		}
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+		
+		$current_user = wp_get_current_user();
+		$post = get_post( $post_id );
+		
+		// Only set author if it's not already set or if the current user is the author
+		if ( ! $post->post_author || $post->post_author == $current_user->ID ) {
+			// Update the post author
+			wp_update_post( array(
+				'ID' => $post_id,
+				'post_author' => $current_user->ID,
+			) );
+			
+			error_log( 'NDM: Set offer author: ' . $post_id . ' -> ' . $current_user->ID );
+		}
 	}
 
 	/**
