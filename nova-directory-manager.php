@@ -2203,55 +2203,18 @@ class Nova_Directory_Manager {
 	}
 
 	/**
-	 * Register ACF field groups for offers.
+	 * Register ACF field groups for offers and businesses.
 	 */
 	private function register_offer_acf_fields() {
 		if ( ! function_exists( 'acf_add_local_field_group' ) ) {
 			return;
 		}
 
-		// Import the offers field group from the JSON file
-		$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
-		if ( file_exists( $json_file ) ) {
-			$json_content = file_get_contents( $json_file );
-			$field_groups = json_decode( $json_content, true );
-			
-			if ( is_array( $field_groups ) ) {
-				foreach ( $field_groups as $field_group ) {
-					// Ensure the field group is always active for our plugin
-					$field_group['active'] = true;
-					
-					// Force the field group to be registered even if disabled in ACF
-					$field_group['local'] = 'json';
-					$field_group['modified'] = time();
-					
-					// Ensure the location rule is correct for 'offer' post type
-					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
-						foreach ( $field_group['location'] as &$location_group ) {
-							foreach ( $location_group as &$rule ) {
-								if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' ) {
-									$rule['value'] = 'offer';
-								}
-							}
-						}
-					}
-					
-					// Remove any existing field group with the same key to avoid conflicts
-					acf_remove_local_field_group( $field_group['key'] );
-					
-					// Register the field group
-					acf_add_local_field_group( $field_group );
-					
-					// Also save to database to ensure it's available in admin
-					$this->save_field_group_to_database( $field_group );
-					
-					// Debug: Log the registration
-					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: offer' );
-				}
-			}
-		} else {
-			error_log( 'NDM: ACF JSON file not found: ' . $json_file );
-		}
+		// Register offers field groups
+		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-17.json', 'offer' );
+		
+		// Register business field groups
+		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-08.json', 'business' );
 	}
 
 	/**
@@ -2742,6 +2705,56 @@ class Nova_Directory_Manager {
 	}
 
 	/**
+	 * Register field groups from JSON file for a specific post type.
+	 *
+	 * @param string $json_file_path
+	 * @param string $post_type
+	 */
+	private function register_field_groups_from_json( $json_file_path, $post_type ) {
+		$json_file = NDM_PLUGIN_DIR . $json_file_path;
+		if ( file_exists( $json_file ) ) {
+			$json_content = file_get_contents( $json_file );
+			$field_groups = json_decode( $json_content, true );
+			
+			if ( is_array( $field_groups ) ) {
+				foreach ( $field_groups as $field_group ) {
+					// Ensure the field group is always active for our plugin
+					$field_group['active'] = true;
+					
+					// Force the field group to be registered even if disabled in ACF
+					$field_group['local'] = 'json';
+					$field_group['modified'] = time();
+					
+					// Ensure the location rule is correct for the specified post type
+					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
+						foreach ( $field_group['location'] as &$location_group ) {
+							foreach ( $location_group as &$rule ) {
+								if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' ) {
+									$rule['value'] = $post_type;
+								}
+							}
+						}
+					}
+					
+					// Remove any existing field group with the same key to avoid conflicts
+					acf_remove_local_field_group( $field_group['key'] );
+					
+					// Register the field group
+					acf_add_local_field_group( $field_group );
+					
+					// Also save to database to ensure it's available in admin
+					$this->save_field_group_to_database( $field_group );
+					
+					// Debug: Log the registration
+					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: ' . $post_type );
+				}
+			}
+		} else {
+			error_log( 'NDM: ACF JSON file not found: ' . $json_file );
+		}
+	}
+
+	/**
 	 * Save field group to database to ensure it's available in admin.
 	 *
 	 * @param array $field_group
@@ -2792,11 +2805,11 @@ class Nova_Directory_Manager {
 	}
 
 	/**
-	 * Force ACF to reload field groups on offer post screens.
+	 * Force ACF to reload field groups on offer and business post screens.
 	 */
 	public function force_acf_reload_on_offer_screens() {
 		$current_screen = get_current_screen();
-		if ( $current_screen && $current_screen->post_type === 'offer' ) {
+		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
 			// Force ACF to reload field groups
 			$this->register_offer_acf_fields();
 			
@@ -2808,25 +2821,31 @@ class Nova_Directory_Manager {
 			// Force ACF to reload field groups
 			acf_get_field_groups();
 			
-			error_log( 'NDM: Forced ACF reload on offer screen: ' . $current_screen->id );
+			error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
 		}
 	}
 
 	/**
-	 * Force offer field groups to be included when ACF loads field groups.
+	 * Force field groups to be included when ACF loads field groups.
 	 *
 	 * @param array $field_groups
 	 * @return array
 	 */
 	public function force_offer_field_groups( $field_groups ) {
-		// Check if we're on an offer post type
+		// Check if we're on an offer or business post type
 		$current_screen = get_current_screen();
-		if ( $current_screen && $current_screen->post_type === 'offer' ) {
-			// Ensure our field group is included
+		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
+			// Ensure our field groups are included
 			$this->register_offer_acf_fields();
 			
-			// Get the field group from our JSON
-			$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
+			// Get the appropriate field group from our JSON
+			$json_file = '';
+			if ( $current_screen->post_type === 'offer' ) {
+				$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
+			} elseif ( $current_screen->post_type === 'business' ) {
+				$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-08.json';
+			}
+			
 			if ( file_exists( $json_file ) ) {
 				$json_content = file_get_contents( $json_file );
 				$our_field_groups = json_decode( $json_content, true );
