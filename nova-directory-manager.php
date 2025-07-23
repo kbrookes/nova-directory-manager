@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.20
+ * Version: 2.0.21
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.20' );
+define( 'NDM_VERSION', '2.0.21' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -732,6 +732,10 @@ class Nova_Directory_Manager {
 						</div>
 					</div>
 				<?php elseif ( $active_tab === 'settings' ) :
+					// Settings tab should be a top-level form, not inside any other form
+					echo '<div class="wrap">';
+					echo '<h2>' . __( 'NDM Settings', 'nova-directory-manager' ) . '</h2>';
+					echo '<h3>' . __( 'Admin Notification Emails', 'nova-directory-manager' ) . '</h3>';
 					// Handle add/remove email actions
 					if ( isset( $_POST['ndm_add_admin_email'] ) && check_admin_referer( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ) ) {
 						$emails = get_option( 'ndm_admin_emails', array() );
@@ -751,35 +755,33 @@ class Nova_Directory_Manager {
 					}
 					$emails = get_option( 'ndm_admin_emails', array() );
 					?>
-					<div class="wrap">
-						<h2><?php _e( 'NDM Settings', 'nova-directory-manager' ); ?></h2>
-						<h3><?php _e( 'Admin Notification Emails', 'nova-directory-manager' ); ?></h3>
-						<form method="post">
-							<?php wp_nonce_field( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ); ?>
-							<table class="form-table">
-								<tbody>
-									<?php foreach ( $emails as $email ) : ?>
-										<tr>
-											<td><?php echo esc_html( $email ); ?></td>
-											<td>
-												<button type="submit" name="ndm_remove_admin_email" value="1" class="button">Remove</button>
-												<input type="hidden" name="ndm_email_to_remove" value="<?php echo esc_attr( $email ); ?>" />
-											</td>
-										</tr>
-									<?php endforeach; ?>
+					<form method="post">
+						<?php wp_nonce_field( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ); ?>
+						<table class="form-table">
+							<tbody>
+								<?php foreach ( $emails as $email ) : ?>
 									<tr>
+										<td><?php echo esc_html( $email ); ?></td>
 										<td>
-											<input type="email" name="ndm_new_admin_email" placeholder="Add new admin email" class="regular-text" />
-										</td>
-										<td>
-											<button type="submit" name="ndm_add_admin_email" value="1" class="button button-primary">Add Email</button>
+											<button type="submit" name="ndm_remove_admin_email" value="1" class="button">Remove</button>
+											<input type="hidden" name="ndm_email_to_remove" value="<?php echo esc_attr( $email ); ?>" />
 										</td>
 									</tr>
-								</tbody>
-							</table>
-						</form>
-					</div>
-				<?php endif; ?>
+								<?php endforeach; ?>
+								<tr>
+									<td>
+										<input type="email" name="ndm_new_admin_email" placeholder="Add new admin email" class="regular-text" />
+									</td>
+									<td>
+										<button type="submit" name="ndm_add_admin_email" value="1" class="button button-primary">Add Email</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</form>
+					<?php
+					echo '</div>';
+				endif; ?>
 			</div>
 		</div>
 		<?php
