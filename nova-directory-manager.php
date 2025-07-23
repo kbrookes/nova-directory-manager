@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.13
+ * Version: 2.0.14
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.13' );
+define( 'NDM_VERSION', '2.0.14' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -1729,6 +1729,12 @@ class Nova_Directory_Manager {
 		// Create the default user role
 		$this->settings = $default_settings;
 		$this->create_user_role();
+		
+		// Register offers post type and ACF fields
+		$this->register_offers_post_type();
+		
+		// Flush rewrite rules
+		flush_rewrite_rules();
 	}
 
 	/**
@@ -2216,6 +2222,9 @@ class Nova_Directory_Manager {
 					
 					// Register the field group
 					acf_add_local_field_group( $field_group );
+					
+					// Also save to database to ensure it's available in admin
+					$this->save_field_group_to_database( $field_group );
 					
 					// Debug: Log the registration
 					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: offer' );
@@ -2710,6 +2719,52 @@ class Nova_Directory_Manager {
 		// Debug: Check if we're on an offer post edit screen
 		if ( is_admin() && isset( $_GET['post_type'] ) && $_GET['post_type'] === 'offer' ) {
 			error_log( 'NDM: On offer post type admin screen' );
+		}
+	}
+
+	/**
+	 * Save field group to database to ensure it's available in admin.
+	 *
+	 * @param array $field_group
+	 */
+	private function save_field_group_to_database( $field_group ) {
+		global $wpdb;
+		
+		// Check if field group already exists in database
+		$existing = $wpdb->get_var( $wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field-group' AND post_name = %s",
+			$field_group['key']
+		) );
+		
+		if ( ! $existing ) {
+			// Create the field group post
+			$post_data = array(
+				'post_title'  => $field_group['title'],
+				'post_name'   => $field_group['key'],
+				'post_type'   => 'acf-field-group',
+				'post_status' => 'publish',
+				'post_content' => '',
+			);
+			
+			$post_id = wp_insert_post( $post_data );
+			
+			if ( $post_id ) {
+				// Save field group data as post meta
+				update_post_meta( $post_id, '_acf_field_group', $field_group );
+				
+				// Save individual field data
+				if ( isset( $field_group['fields'] ) && is_array( $field_group['fields'] ) ) {
+					foreach ( $field_group['fields'] as $field ) {
+						update_post_meta( $post_id, $field['key'], $field );
+					}
+				}
+				
+				error_log( 'NDM: Saved field group to database: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
+			}
+		} else {
+			// Update existing field group
+			update_post_meta( $existing, '_acf_field_group', $field_group );
+			error_log( 'NDM: Updated existing field group in database: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
 		}
 	}
 
