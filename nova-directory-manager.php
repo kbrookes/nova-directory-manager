@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.11
+ * Version: 2.0.12
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.11' );
+define( 'NDM_VERSION', '2.0.12' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -137,6 +137,10 @@ class Nova_Directory_Manager {
 		
 		// Ensure ACF fields are always registered for offers
 		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
+		add_action( 'init', array( $this, 'ensure_offer_acf_fields' ), 20 );
+		add_action( 'admin_init', array( $this, 'ensure_offer_acf_fields' ) );
+		add_action( 'load-post.php', array( $this, 'ensure_offer_acf_fields' ) );
+		add_action( 'load-post-new.php', array( $this, 'ensure_offer_acf_fields' ) );
 	}
 
 	/**
@@ -2188,6 +2192,15 @@ class Nova_Directory_Manager {
 				foreach ( $field_groups as $field_group ) {
 					// Ensure the field group is always active for our plugin
 					$field_group['active'] = true;
+					
+					// Force the field group to be registered even if disabled in ACF
+					$field_group['local'] = 'json';
+					$field_group['modified'] = time();
+					
+					// Remove any existing field group with the same key to avoid conflicts
+					acf_remove_local_field_group( $field_group['key'] );
+					
+					// Register the field group
 					acf_add_local_field_group( $field_group );
 				}
 			}
@@ -2667,6 +2680,12 @@ class Nova_Directory_Manager {
 	public function ensure_offer_acf_fields() {
 		// Register the offer ACF fields
 		$this->register_offer_acf_fields();
+		
+		// Also ensure fields are loaded on post edit screens
+		if ( is_admin() && isset( $_GET['post'] ) && get_post_type( $_GET['post'] ) === 'offer' ) {
+			// Force ACF to reload field groups
+			acf_get_field_groups();
+		}
 	}
 
 	/**
