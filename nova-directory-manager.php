@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.10
+ * Version: 2.0.11
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.10' );
+define( 'NDM_VERSION', '2.0.11' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -134,6 +134,9 @@ class Nova_Directory_Manager {
 
 		add_filter( 'acf/prepare_field/name=offer_business', array( $this, 'maybe_hide_offer_business_field' ) );
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
+		
+		// Ensure ACF fields are always registered for offers
+		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
 	}
 
 	/**
@@ -2078,42 +2081,90 @@ class Nova_Directory_Manager {
 	 * Register the offers post type.
 	 */
 	private function register_offers_post_type() {
-		$labels = array(
-			'name'                  => _x( 'Offers', 'Post type general name', 'nova-directory-manager' ),
-			'singular_name'         => _x( 'Offer', 'Post type singular name', 'nova-directory-manager' ),
-			'menu_name'             => _x( 'Offers', 'Admin Menu text', 'nova-directory-manager' ),
-			'name_admin_bar'        => _x( 'Offer', 'Add New on Toolbar', 'nova-directory-manager' ),
-			'add_new'               => __( 'Add New', 'nova-directory-manager' ),
-			'add_new_item'          => __( 'Add New Offer', 'nova-directory-manager' ),
-			'new_item'              => __( 'New Offer', 'nova-directory-manager' ),
-			'edit_item'             => __( 'Edit Offer', 'nova-directory-manager' ),
-			'view_item'             => __( 'View Offer', 'nova-directory-manager' ),
-			'all_items'             => __( 'All Offers', 'nova-directory-manager' ),
-			'search_items'          => __( 'Search Offers', 'nova-directory-manager' ),
-			'parent_item_colon'     => __( 'Parent Offer:', 'nova-directory-manager' ),
-			'not_found'             => __( 'No offers found.', 'nova-directory-manager' ),
-			'not_found_in_trash'    => __( 'No offers found in Trash.', 'nova-directory-manager' ),
-		);
+		// Import the offers post type from the JSON file
+		$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-offers-post-type.json';
+		if ( file_exists( $json_file ) ) {
+			$json_content = file_get_contents( $json_file );
+			$post_types = json_decode( $json_content, true );
+			
+			if ( is_array( $post_types ) && ! empty( $post_types ) ) {
+				$post_type_data = $post_types[0]; // Get the first (and only) post type
+				
+				// Convert ACF post type format to WordPress format
+				$args = array(
+					'labels' => $post_type_data['labels'],
+					'public' => $post_type_data['public'],
+					'publicly_queryable' => $post_type_data['publicly_queryable'],
+					'show_ui' => $post_type_data['show_ui'],
+					'show_in_menu' => $post_type_data['show_in_menu'],
+					'show_in_admin_bar' => $post_type_data['show_in_admin_bar'],
+					'show_in_nav_menus' => $post_type_data['show_in_nav_menus'],
+					'show_in_rest' => $post_type_data['show_in_rest'],
+					'rest_base' => $post_type_data['rest_base'],
+					'rest_namespace' => $post_type_data['rest_namespace'],
+					'rest_controller_class' => $post_type_data['rest_controller_class'],
+					'menu_position' => $post_type_data['menu_position'],
+					'menu_icon' => $post_type_data['menu_icon']['value'],
+					'capability_type' => 'post',
+					'capabilities' => array(),
+					'map_meta_cap' => true,
+					'hierarchical' => $post_type_data['hierarchical'],
+					'supports' => $post_type_data['supports'],
+					'taxonomies' => $post_type_data['taxonomies'],
+					'has_archive' => $post_type_data['has_archive'],
+					'rewrite' => array(
+						'slug' => $post_type_data['rewrite']['permalink_rewrite'],
+						'with_front' => $post_type_data['rewrite']['with_front'] === '1',
+						'feeds' => $post_type_data['rewrite']['feeds'] === '1',
+						'pages' => $post_type_data['rewrite']['pages'] === '1',
+					),
+					'query_var' => $post_type_data['query_var'],
+					'can_export' => $post_type_data['can_export'],
+					'delete_with_user' => $post_type_data['delete_with_user'],
+					'exclude_from_search' => $post_type_data['exclude_from_search'],
+				);
 
-		$args = array(
-			'labels'                => $labels,
-			'public'                => true,
-			'publicly_queryable'    => true,
-			'show_ui'               => true,
-			'show_in_menu'          => true,
-			'query_var'             => true,
-			'rewrite'               => array( 'slug' => 'offers' ),
-			'capability_type'       => 'post',
-			'has_archive'           => true,
-			'hierarchical'          => false,
-			'menu_position'         => null,
-			'menu_icon'             => 'dashicons-money-alt',
-			'supports'              => array( 'title', 'thumbnail', 'author' ),
-			'taxonomies'            => array( 'category' ),
-			'show_in_rest'          => true,
-		);
+				register_post_type( $post_type_data['post_type'], $args );
+			}
+		} else {
+			// Fallback to hardcoded registration if JSON file doesn't exist
+			$labels = array(
+				'name'                  => _x( 'Offers', 'Post type general name', 'nova-directory-manager' ),
+				'singular_name'         => _x( 'Offer', 'Post type singular name', 'nova-directory-manager' ),
+				'menu_name'             => _x( 'Offers', 'Admin Menu text', 'nova-directory-manager' ),
+				'name_admin_bar'        => _x( 'Offer', 'Add New on Toolbar', 'nova-directory-manager' ),
+				'add_new'               => __( 'Add New', 'nova-directory-manager' ),
+				'add_new_item'          => __( 'Add New Offer', 'nova-directory-manager' ),
+				'new_item'              => __( 'New Offer', 'nova-directory-manager' ),
+				'edit_item'             => __( 'Edit Offer', 'nova-directory-manager' ),
+				'view_item'             => __( 'View Offer', 'nova-directory-manager' ),
+				'all_items'             => __( 'All Offers', 'nova-directory-manager' ),
+				'search_items'          => __( 'Search Offers', 'nova-directory-manager' ),
+				'parent_item_colon'     => __( 'Parent Offer:', 'nova-directory-manager' ),
+				'not_found'             => __( 'No offers found.', 'nova-directory-manager' ),
+				'not_found_in_trash'    => __( 'No offers found in Trash.', 'nova-directory-manager' ),
+			);
 
-		register_post_type( 'offer', $args );
+			$args = array(
+				'labels'                => $labels,
+				'public'                => true,
+				'publicly_queryable'    => true,
+				'show_ui'               => true,
+				'show_in_menu'          => true,
+				'query_var'             => true,
+				'rewrite'               => array( 'slug' => 'offers' ),
+				'capability_type'       => 'post',
+				'has_archive'           => true,
+				'hierarchical'          => false,
+				'menu_position'         => null,
+				'menu_icon'             => 'dashicons-money-alt',
+				'supports'              => array( 'title', 'thumbnail', 'author' ),
+				'taxonomies'            => array( 'category' ),
+				'show_in_rest'          => true,
+			);
+
+			register_post_type( 'offer', $args );
+		}
 		
 		// Register ACF field groups for offers
 		$this->register_offer_acf_fields();
@@ -2135,6 +2186,8 @@ class Nova_Directory_Manager {
 			
 			if ( is_array( $field_groups ) ) {
 				foreach ( $field_groups as $field_group ) {
+					// Ensure the field group is always active for our plugin
+					$field_group['active'] = true;
 					acf_add_local_field_group( $field_group );
 				}
 			}
@@ -2606,6 +2659,14 @@ class Nova_Directory_Manager {
 			return null;
 		}
 		return $field;
+	}
+
+	/**
+	 * Ensure ACF fields are always registered for offers, even if field group is disabled.
+	 */
+	public function ensure_offer_acf_fields() {
+		// Register the offer ACF fields
+		$this->register_offer_acf_fields();
 	}
 
 	/**
