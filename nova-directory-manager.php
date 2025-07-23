@@ -148,6 +148,41 @@ class Nova_Directory_Manager {
 		
 		// Force ACF to reload field groups on offer post screens
 		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ) );
+
+		// Register the Advertiser Type taxonomy for offers
+		add_action('init', function() {
+			register_taxonomy('advertiser_type', 'offer', array(
+				'labels' => array(
+					'name' => 'Advertiser Types',
+					'singular_name' => 'Advertiser Type',
+				),
+				'public' => false,
+				'show_ui' => true,
+				'show_in_menu' => true,
+				'show_admin_column' => true,
+				'hierarchical' => false,
+				'rewrite' => false,
+			));
+			// Ensure default terms exist
+			if (!term_exists('Advertiser', 'advertiser_type')) {
+				wp_insert_term('Advertiser', 'advertiser_type');
+			}
+			if (!term_exists('YBA Member', 'advertiser_type')) {
+				wp_insert_term('YBA Member', 'advertiser_type');
+			}
+		}, 11);
+
+		// Assign advertiser_type term on offer save
+		add_action('acf/save_post', function($post_id) {
+			if (get_post_type($post_id) !== 'offer') return;
+			if (!is_user_logged_in()) return;
+			$user = wp_get_current_user();
+			if (in_array('advertiser', $user->roles, true)) {
+				wp_set_object_terms($post_id, 'Advertiser', 'advertiser_type', false);
+			} elseif (in_array('business_owner', $user->roles, true)) {
+				wp_set_object_terms($post_id, 'YBA Member', 'advertiser_type', false);
+			}
+		}, 15);
 	}
 
 	/**
@@ -279,6 +314,7 @@ class Nova_Directory_Manager {
 			<h2 class="nav-tab-wrapper">
 				<a href="?page=nova-directory-manager&tab=directory" class="nav-tab<?php if ( $active_tab === 'directory' ) echo ' nav-tab-active'; ?>">Directory</a>
 				<a href="?page=nova-directory-manager&tab=offers" class="nav-tab<?php if ( $active_tab === 'offers' ) echo ' nav-tab-active'; ?>">Offers</a>
+				<a href="?page=nova-directory-manager&tab=settings" class="nav-tab<?php if ( $active_tab === 'settings' ) echo ' nav-tab-active'; ?>">Settings</a>
 			</h2>
 
 			<div class="ndm-admin-container">
@@ -694,6 +730,54 @@ class Nova_Directory_Manager {
 							<code>[ndm_payment_history]</code>
 							<p class="description"><?php _e( 'These shortcodes provide frontend interfaces for advertisers to manage their offers and payments.', 'nova-directory-manager' ); ?></p>
 						</div>
+					</div>
+				<?php elseif ( $active_tab === 'settings' ) :
+					// Handle add/remove email actions
+					if ( isset( $_POST['ndm_add_admin_email'] ) && check_admin_referer( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ) ) {
+						$emails = get_option( 'ndm_admin_emails', array() );
+						$new_email = sanitize_email( $_POST['ndm_new_admin_email'] ?? '' );
+						if ( $new_email && ! in_array( $new_email, $emails ) ) {
+							$emails[] = $new_email;
+							update_option( 'ndm_admin_emails', $emails );
+							echo '<div class="notice notice-success"><p>Admin email added.</p></div>';
+						}
+					}
+					if ( isset( $_POST['ndm_remove_admin_email'] ) && isset( $_POST['ndm_email_to_remove'] ) && check_admin_referer( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ) ) {
+						$emails = get_option( 'ndm_admin_emails', array() );
+						$remove = sanitize_email( $_POST['ndm_email_to_remove'] );
+						$emails = array_filter( $emails, function($e) use ($remove) { return $e !== $remove; });
+						update_option( 'ndm_admin_emails', $emails );
+						echo '<div class="notice notice-success"><p>Admin email removed.</p></div>';
+					}
+					$emails = get_option( 'ndm_admin_emails', array() );
+					?>
+					<div class="wrap">
+						<h2><?php _e( 'NDM Settings', 'nova-directory-manager' ); ?></h2>
+						<h3><?php _e( 'Admin Notification Emails', 'nova-directory-manager' ); ?></h3>
+						<form method="post">
+							<?php wp_nonce_field( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ); ?>
+							<table class="form-table">
+								<tbody>
+									<?php foreach ( $emails as $email ) : ?>
+										<tr>
+											<td><?php echo esc_html( $email ); ?></td>
+											<td>
+												<button type="submit" name="ndm_remove_admin_email" value="1" class="button">Remove</button>
+												<input type="hidden" name="ndm_email_to_remove" value="<?php echo esc_attr( $email ); ?>" />
+											</td>
+										</tr>
+									<?php endforeach; ?>
+									<tr>
+										<td>
+											<input type="email" name="ndm_new_admin_email" placeholder="Add new admin email" class="regular-text" />
+										</td>
+										<td>
+											<button type="submit" name="ndm_add_admin_email" value="1" class="button button-primary">Add Email</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</form>
 					</div>
 				<?php endif; ?>
 			</div>
@@ -2731,14 +2815,11 @@ class Nova_Directory_Manager {
 			$field_groups = json_decode( $json_content, true );
 			
 			if ( is_array( $field_groups ) ) {
-				foreach ( $field_groups as $field_group ) {
+				foreach ( $field_groups as &$field_group ) {
 					// Ensure the field group is always active for our plugin
 					$field_group['active'] = true;
-					
-					// Force the field group to be registered even if disabled in ACF
 					$field_group['local'] = 'json';
 					$field_group['modified'] = time();
-					
 					// Ensure the location rule is correct for the specified post type
 					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
 						foreach ( $field_group['location'] as &$location_group ) {
@@ -2749,17 +2830,31 @@ class Nova_Directory_Manager {
 							}
 						}
 					}
-					
-					// Remove any existing field group with the same key to avoid conflicts
+					// --- Inject category selector for offers ---
+					if ($post_type === 'offer') {
+						$category_field = array(
+							'key' => 'field_ndm_offer_category',
+							'label' => 'Categories',
+							'name' => 'ndm_offer_category',
+							'type' => 'taxonomy',
+							'taxonomy' => 'category',
+							'field_type' => 'multi_select',
+							'add_term' => 0,
+							'save_terms' => 1,
+							'load_terms' => 1,
+							'return_format' => 'id',
+							'multiple' => 1,
+							'required' => 1,
+							'instructions' => 'Select one or more categories for this offer.',
+							'wrapper' => array('width' => '', 'class' => '', 'id' => ''),
+						);
+						// Insert after the business field (first field)
+						array_splice($field_group['fields'], 1, 0, array($category_field));
+					}
+					// --- End inject ---
 					acf_remove_local_field_group( $field_group['key'] );
-					
-					// Register the field group
 					acf_add_local_field_group( $field_group );
-					
-					// Also save to database to ensure it's available in admin
 					$this->save_field_group_to_database( $field_group );
-					
-					// Debug: Log the registration
 					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: ' . $post_type );
 				}
 			}
