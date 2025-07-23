@@ -1,5 +1,35 @@
 # Nova Directory Manager 2.0 - Upgrade Summary
 
+## Recent Updates (v2.0.15–v2.0.20)
+
+- **ACF Field Group Auto-Injection:**
+  - Category selector (multi-select, required) is now injected into the Offers form programmatically.
+- **Advertiser Type Taxonomy:**
+  - Custom taxonomy auto-assigned: 'Advertiser' for advertisers, 'YBA Member' for business owners.
+- **Author Support for Offers:**
+  - Offers now have proper author assignment and admin UI support.
+- **Settings Tab for Admin Notification Emails:**
+  - New admin UI for adding/removing notification emails, stored in `ndm_admin_emails`.
+
+## Features Remaining / To Be Implemented
+
+- **Payment Integration:**
+  - Stripe/Fluent Forms payment for paid offers (Advertisers and extra Business Owner offers)
+- **Offer Approval Workflow:**
+  - Admin approval queue, status management, and notification triggers
+- **Offer Expiry/Auto-Unpublish:**
+  - Automatic expiry and unpublishing of offers based on end date
+- **Admin Notification Triggers:**
+  - Use the new admin email list for notifications (new member, new offer, approval needed, etc.)
+- **Public Offer Listing & Filtering:**
+  - Shortcodes or templates for public offer display, search, and filtering
+- **Reporting & Analytics:**
+  - Admin dashboard for offer stats, payments, user activity
+- **Frontend Polish:**
+  - Improved frontend UI/UX for offer/business forms and dashboards
+- **Documentation:**
+  - Update all docs for new features, workflows, and shortcodes
+
 ## Overview
 
 Nova Directory Manager 2.0 adds a comprehensive offers and advertising system, transforming the plugin into a complete business promotion platform with payment processing capabilities.
