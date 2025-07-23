@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.14
+ * Version: 2.0.15
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.14' );
+define( 'NDM_VERSION', '2.0.15' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -144,6 +144,9 @@ class Nova_Directory_Manager {
 		
 		// Hook into ACF field group loading to ensure our fields are included
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
+		
+		// Force ACF to reload field groups on offer post screens
+		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ) );
 	}
 
 	/**
@@ -253,6 +256,12 @@ class Nova_Directory_Manager {
 		// Handle offers admin actions
 		$this->handle_offers_admin_actions();
 
+		// Handle manual ACF field registration
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'register_acf_fields' && check_admin_referer( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ) ) {
+			$this->register_offer_acf_fields();
+			echo '<div class="notice notice-success"><p>ACF fields registered successfully!</p></div>';
+		}
+
 		// Get available forms and post types
 		$fluent_forms = $this->get_fluent_forms();
 		$post_types = $this->get_post_types();
@@ -343,6 +352,16 @@ class Nova_Directory_Manager {
 					</div>
 
 					<div class="ndm-admin-sidebar">
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'ACF Field Registration', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'If ACF fields are not appearing in the admin, click the button below to manually register them.', 'nova-directory-manager' ); ?></p>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ); ?>
+								<input type="hidden" name="action" value="register_acf_fields" />
+								<?php submit_button( __( 'Register ACF Fields', 'nova-directory-manager' ), 'secondary', 'register_acf_fields' ); ?>
+							</form>
+						</div>
+
 						<div class="ndm-admin-box">
 							<h3><?php _e( 'Directory Setup', 'nova-directory-manager' ); ?></h3>
 							<p><?php _e( 'Configure your business directory settings here. These settings control how business registrations are processed and what user roles are created.', 'nova-directory-manager' ); ?></p>
@@ -2730,41 +2749,66 @@ class Nova_Directory_Manager {
 	private function save_field_group_to_database( $field_group ) {
 		global $wpdb;
 		
-		// Check if field group already exists in database
+		// First, delete any existing field group with this key to avoid conflicts
 		$existing = $wpdb->get_var( $wpdb->prepare(
 			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field-group' AND post_name = %s",
 			$field_group['key']
 		) );
 		
-		if ( ! $existing ) {
-			// Create the field group post
-			$post_data = array(
-				'post_title'  => $field_group['title'],
-				'post_name'   => $field_group['key'],
-				'post_type'   => 'acf-field-group',
-				'post_status' => 'publish',
-				'post_content' => '',
-			);
+		if ( $existing ) {
+			wp_delete_post( $existing, true );
+			error_log( 'NDM: Deleted existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+		}
+		
+		// Create the field group post
+		$post_data = array(
+			'post_title'  => $field_group['title'],
+			'post_name'   => $field_group['key'],
+			'post_type'   => 'acf-field-group',
+			'post_status' => 'publish',
+			'post_content' => '',
+		);
+		
+		$post_id = wp_insert_post( $post_data );
+		
+		if ( $post_id ) {
+			// Save field group data as post meta
+			update_post_meta( $post_id, '_acf_field_group', $field_group );
 			
-			$post_id = wp_insert_post( $post_data );
-			
-			if ( $post_id ) {
-				// Save field group data as post meta
-				update_post_meta( $post_id, '_acf_field_group', $field_group );
-				
-				// Save individual field data
-				if ( isset( $field_group['fields'] ) && is_array( $field_group['fields'] ) ) {
-					foreach ( $field_group['fields'] as $field ) {
-						update_post_meta( $post_id, $field['key'], $field );
-					}
+			// Save individual field data
+			if ( isset( $field_group['fields'] ) && is_array( $field_group['fields'] ) ) {
+				foreach ( $field_group['fields'] as $field ) {
+					update_post_meta( $post_id, $field['key'], $field );
 				}
-				
-				error_log( 'NDM: Saved field group to database: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
 			}
-		} else {
-			// Update existing field group
-			update_post_meta( $existing, '_acf_field_group', $field_group );
-			error_log( 'NDM: Updated existing field group in database: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+			
+			error_log( 'NDM: Saved field group to database: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
+			
+			// Force ACF to clear its cache
+			if ( function_exists( 'acf_get_cache' ) ) {
+				acf_get_cache( 'acf_get_field_groups' )->flush();
+			}
+		}
+	}
+
+	/**
+	 * Force ACF to reload field groups on offer post screens.
+	 */
+	public function force_acf_reload_on_offer_screens() {
+		$current_screen = get_current_screen();
+		if ( $current_screen && $current_screen->post_type === 'offer' ) {
+			// Force ACF to reload field groups
+			$this->register_offer_acf_fields();
+			
+			// Clear ACF cache
+			if ( function_exists( 'acf_get_cache' ) ) {
+				acf_get_cache( 'acf_get_field_groups' )->flush();
+			}
+			
+			// Force ACF to reload field groups
+			acf_get_field_groups();
+			
+			error_log( 'NDM: Forced ACF reload on offer screen: ' . $current_screen->id );
 		}
 	}
 
