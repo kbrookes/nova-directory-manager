@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.8
+ * Version: 2.0.9
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.8' );
+define( 'NDM_VERSION', '2.0.9' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -2109,12 +2109,208 @@ class Nova_Directory_Manager {
 			'hierarchical'          => false,
 			'menu_position'         => null,
 			'menu_icon'             => 'dashicons-money-alt',
-			'supports'              => array( 'title', 'thumbnail' ),
+			'supports'              => array( 'title', 'thumbnail', 'author' ),
 			'taxonomies'            => array( 'category' ),
 			'show_in_rest'          => true,
 		);
 
 		register_post_type( 'offer', $args );
+		
+		// Register ACF field groups for offers
+		$this->register_offer_acf_fields();
+	}
+
+	/**
+	 * Register ACF field groups for offers.
+	 */
+	private function register_offer_acf_fields() {
+		if ( ! function_exists( 'acf_add_local_field_group' ) ) {
+			return;
+		}
+
+		acf_add_local_field_group( array(
+			'key' => 'group_offers_acf_fields',
+			'title' => 'Offer Fields',
+			'fields' => array(
+				array(
+					'key' => 'field_offer_business',
+					'label' => 'Business',
+					'name' => 'offer_business',
+					'type' => 'post_object',
+					'instructions' => 'Select the business this offer is for (Business Owners only)',
+					'required' => 0,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'post_type' => array(
+						0 => 'business',
+					),
+					'taxonomy' => '',
+					'allow_null' => 0,
+					'multiple' => 0,
+					'return_format' => 'id',
+					'ui' => 1,
+				),
+				array(
+					'key' => 'field_offer_category',
+					'label' => 'Offer Category',
+					'name' => 'offer_category',
+					'type' => 'taxonomy',
+					'instructions' => 'Select the category for this offer (Advertisers only)',
+					'required' => 0,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'taxonomy' => 'category',
+					'field_type' => 'select',
+					'allow_null' => 0,
+					'add_term' => 0,
+					'save_terms' => 1,
+					'load_terms' => 1,
+					'return_format' => 'id',
+					'multiple' => 0,
+				),
+				array(
+					'key' => 'field_offer_description',
+					'label' => 'Offer Description',
+					'name' => 'offer_description',
+					'type' => 'textarea',
+					'instructions' => 'Describe your offer in detail',
+					'required' => 1,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'default_value' => '',
+					'placeholder' => '',
+					'maxlength' => '',
+					'rows' => 4,
+					'new_lines' => 'br',
+				),
+				array(
+					'key' => 'field_offer_price',
+					'label' => 'Offer Price',
+					'name' => 'offer_price',
+					'type' => 'number',
+					'instructions' => 'Enter the price for this offer (if applicable)',
+					'required' => 0,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'default_value' => '',
+					'placeholder' => '',
+					'prepend' => '',
+					'append' => '',
+					'min' => 0,
+					'max' => '',
+					'step' => '0.01',
+				),
+				array(
+					'key' => 'field_is_paid_offer',
+					'label' => 'Is Paid Offer',
+					'name' => 'is_paid_offer',
+					'type' => 'true_false',
+					'instructions' => 'Check if this is a paid offer',
+					'required' => 0,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'message' => '',
+					'default_value' => 0,
+					'ui' => 1,
+					'ui_on_text' => 'Yes',
+					'ui_off_text' => 'No',
+				),
+				array(
+					'key' => 'field_offer_duration',
+					'label' => 'Duration (Days)',
+					'name' => 'offer_duration',
+					'type' => 'number',
+					'instructions' => 'How long should this offer be active (in days)',
+					'required' => 1,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'default_value' => 30,
+					'placeholder' => '',
+					'prepend' => '',
+					'append' => 'days',
+					'min' => 1,
+					'max' => 365,
+					'step' => 1,
+				),
+				array(
+					'key' => 'field_expiry_date',
+					'label' => 'Expiry Date',
+					'name' => 'expiry_date',
+					'type' => 'date_picker',
+					'instructions' => 'When does this offer expire',
+					'required' => 1,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'display_format' => 'd/m/Y',
+					'return_format' => 'Y-m-d',
+					'first_day' => 1,
+				),
+				array(
+					'key' => 'field_offer_terms',
+					'label' => 'Terms & Conditions',
+					'name' => 'offer_terms',
+					'type' => 'textarea',
+					'instructions' => 'Any terms and conditions for this offer',
+					'required' => 0,
+					'conditional_logic' => 0,
+					'wrapper' => array(
+						'width' => '',
+						'class' => '',
+						'id' => '',
+					),
+					'default_value' => '',
+					'placeholder' => '',
+					'maxlength' => '',
+					'rows' => 3,
+					'new_lines' => 'br',
+				),
+			),
+			'location' => array(
+				array(
+					array(
+						'param' => 'post_type',
+						'operator' => '==',
+						'value' => 'offer',
+					),
+				),
+			),
+			'menu_order' => 0,
+			'position' => 'normal',
+			'style' => 'default',
+			'label_placement' => 'top',
+			'instruction_placement' => 'label',
+			'hide_on_screen' => '',
+			'active' => true,
+			'description' => '',
+		) );
 	}
 
 	/**
@@ -2530,18 +2726,8 @@ class Nova_Directory_Manager {
 		// Add ACF form head (for conditionals, tabs, etc.)
 		acf_form_head();
 
-		// Optionally, specify the offer field group ID (replace with your actual group key)
-		$offer_field_group = 'group_offers_acf_fields'; // TODO: Replace with your actual field group key
-		$field_groups = array();
-		if ( function_exists( 'acf_get_field_group' ) && acf_get_field_group( $offer_field_group ) ) {
-			$field_groups = array( $offer_field_group );
-		} else {
-			// Fallback: auto-detect by post type
-			$auto_groups = acf_get_field_groups( array( 'post_type' => 'offer' ) );
-			if ( ! empty( $auto_groups ) ) {
-				$field_groups = wp_list_pluck( $auto_groups, 'ID' );
-			}
-		}
+		// Use the offer field group
+		$field_groups = array( 'group_offers_acf_fields' );
 
 		if ( isset( $_GET['offer_submitted'] ) ) {
 			echo '<div class="ndm-offer-success">' . esc_html__( 'Offer saved successfully!', 'nova-directory-manager' ) . '</div>';
