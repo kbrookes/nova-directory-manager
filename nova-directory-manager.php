@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.12
+ * Version: 2.0.13
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.12' );
+define( 'NDM_VERSION', '2.0.13' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -141,6 +141,9 @@ class Nova_Directory_Manager {
 		add_action( 'admin_init', array( $this, 'ensure_offer_acf_fields' ) );
 		add_action( 'load-post.php', array( $this, 'ensure_offer_acf_fields' ) );
 		add_action( 'load-post-new.php', array( $this, 'ensure_offer_acf_fields' ) );
+		
+		// Hook into ACF field group loading to ensure our fields are included
+		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
 	}
 
 	/**
@@ -2197,13 +2200,29 @@ class Nova_Directory_Manager {
 					$field_group['local'] = 'json';
 					$field_group['modified'] = time();
 					
+					// Ensure the location rule is correct for 'offer' post type
+					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
+						foreach ( $field_group['location'] as &$location_group ) {
+							foreach ( $location_group as &$rule ) {
+								if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' ) {
+									$rule['value'] = 'offer';
+								}
+							}
+						}
+					}
+					
 					// Remove any existing field group with the same key to avoid conflicts
 					acf_remove_local_field_group( $field_group['key'] );
 					
 					// Register the field group
 					acf_add_local_field_group( $field_group );
+					
+					// Debug: Log the registration
+					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: offer' );
 				}
 			}
+		} else {
+			error_log( 'NDM: ACF JSON file not found: ' . $json_file );
 		}
 	}
 
@@ -2685,7 +2704,47 @@ class Nova_Directory_Manager {
 		if ( is_admin() && isset( $_GET['post'] ) && get_post_type( $_GET['post'] ) === 'offer' ) {
 			// Force ACF to reload field groups
 			acf_get_field_groups();
+			error_log( 'NDM: Ensuring ACF fields for offer post: ' . $_GET['post'] );
 		}
+		
+		// Debug: Check if we're on an offer post edit screen
+		if ( is_admin() && isset( $_GET['post_type'] ) && $_GET['post_type'] === 'offer' ) {
+			error_log( 'NDM: On offer post type admin screen' );
+		}
+	}
+
+	/**
+	 * Force offer field groups to be included when ACF loads field groups.
+	 *
+	 * @param array $field_groups
+	 * @return array
+	 */
+	public function force_offer_field_groups( $field_groups ) {
+		// Check if we're on an offer post type
+		$current_screen = get_current_screen();
+		if ( $current_screen && $current_screen->post_type === 'offer' ) {
+			// Ensure our field group is included
+			$this->register_offer_acf_fields();
+			
+			// Get the field group from our JSON
+			$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
+			if ( file_exists( $json_file ) ) {
+				$json_content = file_get_contents( $json_file );
+				$our_field_groups = json_decode( $json_content, true );
+				
+				if ( is_array( $our_field_groups ) ) {
+					foreach ( $our_field_groups as $field_group ) {
+						$field_group['active'] = true;
+						$field_group['local'] = 'json';
+						
+						// Add our field group to the list
+						$field_groups[] = $field_group;
+					}
+				}
+			}
+		}
+		
+		return $field_groups;
 	}
 
 	/**
