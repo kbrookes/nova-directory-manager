@@ -1,0 +1,679 @@
+[
+    {
+        "key": "group_687447b887b7e",
+        "title": "Offers",
+        "fields": [
+            {
+                "key": "field_68745119f20f7",
+                "label": "Select Your Business",
+                "name": "offer_business",
+                "aria-label": "",
+                "type": "post_object",
+                "instructions": "(If you are a Yarraville Business Association member, select your business from this list)",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": "",
+                    "data-form_width": 600
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "post_type": [
+                    "business"
+                ],
+                "post_status": "",
+                "taxonomy": "",
+                "return_format": "object",
+                "multiple": 0,
+                "post_author": [
+                    "current_user"
+                ],
+                "add_edit_post": 1,
+                "post_author_edit": 1,
+                "add_post_button": "Add Offer",
+                "form_width": 600,
+                "post_form_template": "",
+                "allow_null": 1,
+                "allow_in_bindings": 0,
+                "bidirectional": 0,
+                "ui": 1,
+                "bidirectional_target": []
+            },
+            {
+                "key": "field_687447b80c4bd",
+                "label": "Description",
+                "name": "",
+                "aria-label": "",
+                "type": "tab",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "placement": "top",
+                "endpoint": 0,
+                "selected": 0
+            },
+            {
+                "key": "field_687447dc0c4be",
+                "label": "Short Description",
+                "name": "offer_short_description",
+                "aria-label": "",
+                "type": "textarea",
+                "instructions": "(This is shown as a preview, no more than 50 words)",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "rows": 4,
+                "placeholder": "",
+                "new_lines": "wpautop"
+            },
+            {
+                "key": "field_687447ec0c4bf",
+                "label": "Long Description",
+                "name": "offer_long_description",
+                "aria-label": "",
+                "type": "wysiwyg",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "allow_in_bindings": 0,
+                "tabs": "all",
+                "toolbar": "full",
+                "media_upload": 1,
+                "delay": 0
+            },
+            {
+                "key": "field_68745042e0a66",
+                "label": "Offer Image",
+                "name": "offer_image",
+                "aria-label": "",
+                "type": "image",
+                "instructions": "(If you'd like to add an image to your offer, like a digital flyer, add it here. JPG, PNG, GIF only, no more than 1MB",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "return_format": "array",
+                "library": "all",
+                "no_file_text": "",
+                "button_text": "",
+                "custom_directory": 0,
+                "hide_from_library": 0,
+                "happy_files_folder": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "1.2",
+                "mime_types": "jpg,png,gif",
+                "allow_in_bindings": 0,
+                "preview_size": "medium"
+            },
+            {
+                "key": "field_687449e5e0a5b",
+                "label": "Offer Details",
+                "name": "",
+                "aria-label": "",
+                "type": "tab",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "placement": "top",
+                "endpoint": 0,
+                "selected": 0
+            },
+            {
+                "key": "field_687449f1e0a5c",
+                "label": "Type of Offer",
+                "name": "offer_type",
+                "aria-label": "",
+                "type": "select",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "choices": {
+                    "bogof": "BOGOF",
+                    "loyalty": "Loyalty",
+                    "disc": "Discount (% or $ amount)",
+                    "intro": "Introductory Offer",
+                    "other": "Other"
+                },
+                "default_value": false,
+                "return_format": "value",
+                "multiple": 0,
+                "allow_null": 0,
+                "allow_in_bindings": 0,
+                "ui": 0,
+                "ajax": 0,
+                "placeholder": "",
+                "create_options": 0,
+                "save_options": 0
+            },
+            {
+                "key": "field_68744acfe0a5e",
+                "label": "Discount Value",
+                "name": "offer_discount_value",
+                "aria-label": "",
+                "type": "number",
+                "instructions": "(Please provide the % off that your offer is providing)",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687449f1e0a5c",
+                            "operator": "==",
+                            "value": "disc"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "min": "",
+                "max": "",
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "step": "",
+                "prepend": "",
+                "append": ""
+            },
+            {
+                "key": "field_687456831d2d1",
+                "label": "Loyalty Offer",
+                "name": "offer_loyalty_details",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687449f1e0a5c",
+                            "operator": "==",
+                            "value": "loyalty"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "prepend": "",
+                "append": ""
+            },
+            {
+                "key": "field_68744a62e0a5d",
+                "label": "Offer Type - Other",
+                "name": "offer_type_other",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "(In one or two words, please describe the offer type)",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687449f1e0a5c",
+                            "operator": "==",
+                            "value": "other"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "prepend": "",
+                "append": ""
+            },
+            {
+                "key": "field_687457641d2d2",
+                "label": "Offer Timing",
+                "name": "offer_timing",
+                "aria-label": "",
+                "type": "select",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "choices": {
+                    "fixed": "Fixed Start and End Date",
+                    "days": "Specific Days of Week",
+                    "until": "Until End Date",
+                    "ongoing": "Until manually ended"
+                },
+                "default_value": false,
+                "return_format": "value",
+                "multiple": 0,
+                "allow_null": 0,
+                "allow_in_bindings": 0,
+                "ui": 0,
+                "ajax": 0,
+                "placeholder": "",
+                "create_options": 0,
+                "save_options": 0
+            },
+            {
+                "key": "field_68744e63e0a60",
+                "label": "Offer Start Date",
+                "name": "offer_start_date",
+                "aria-label": "",
+                "type": "date_picker",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687457641d2d2",
+                            "operator": "==",
+                            "value": "fixed"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "display_format": "d\/m\/Y",
+                "return_format": "F j, Y",
+                "first_day": 1,
+                "allow_in_bindings": 0
+            },
+            {
+                "key": "field_68744e7ee0a61",
+                "label": "Offer End Date",
+                "name": "offer_end_date",
+                "aria-label": "",
+                "type": "date_picker",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687457641d2d2",
+                            "operator": "==",
+                            "value": "fixed"
+                        }
+                    ],
+                    [
+                        {
+                            "field": "field_687457641d2d2",
+                            "operator": "==",
+                            "value": "until"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "display_format": "d\/m\/Y",
+                "return_format": "d\/m\/Y",
+                "first_day": 1,
+                "allow_in_bindings": 0
+            },
+            {
+                "key": "field_68744e8be0a62",
+                "label": "Ongoing Offer - No Start or End Date",
+                "name": "offer_ongoing",
+                "aria-label": "",
+                "type": "checkbox",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687457641d2d2",
+                            "operator": "==",
+                            "value": "ongoing"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "choices": [],
+                "default_value": [],
+                "return_format": "value",
+                "allow_custom": 0,
+                "allow_in_bindings": 0,
+                "layout": "vertical",
+                "toggle": 0,
+                "save_custom": 0,
+                "custom_choice_button_text": "Add new choice"
+            },
+            {
+                "key": "field_6874680940372",
+                "label": "Days of Week",
+                "name": "offer_days_of_week",
+                "aria-label": "",
+                "type": "checkbox",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_687457641d2d2",
+                            "operator": "==",
+                            "value": "days"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "choices": {
+                    "mon": "Monday",
+                    "tues": "Tuesday",
+                    "wed": "Wednesday",
+                    "thurs": "Thursday",
+                    "fri": "Friday",
+                    "sat": "Saturday",
+                    "sun": "Sunday"
+                },
+                "default_value": [],
+                "return_format": "value",
+                "allow_custom": 0,
+                "allow_in_bindings": 0,
+                "layout": "horizontal",
+                "toggle": 1,
+                "save_custom": 0,
+                "custom_choice_button_text": "Add new choice"
+            },
+            {
+                "key": "field_68744ffbe0a65",
+                "label": "How to Redeem",
+                "name": "offer_redeem",
+                "aria-label": "",
+                "type": "textarea",
+                "instructions": "(Provide information about how to redeem the offer, if needed)",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "rows": 4,
+                "placeholder": "",
+                "new_lines": "br"
+            },
+            {
+                "key": "field_68744fc4e0a63",
+                "label": "Eligibility",
+                "name": "",
+                "aria-label": "",
+                "type": "tab",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "placement": "top",
+                "endpoint": 0,
+                "selected": 0
+            },
+            {
+                "key": "field_68744fd1e0a64",
+                "label": "Offer Eligibility",
+                "name": "offer_eligibility",
+                "aria-label": "",
+                "type": "wysiwyg",
+                "instructions": "(Describe the basic terms & conditions of the offer, or link to where they can be found)",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "default_value": "",
+                "allow_in_bindings": 0,
+                "tabs": "all",
+                "toolbar": "full",
+                "media_upload": 1,
+                "delay": 0
+            },
+            {
+                "key": "field_687862cf5a032",
+                "label": "Publishing",
+                "name": "",
+                "aria-label": "",
+                "type": "tab",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "placement": "top",
+                "endpoint": 0,
+                "selected": 0
+            },
+            {
+                "key": "field_6878638a5a034",
+                "label": "Offer Publishing Dates",
+                "name": "offer_publishing_dates",
+                "aria-label": "",
+                "type": "button_group",
+                "instructions": "If you would like to have the offer advertisement visible before the offer is 'live', then you can select different dates here. For paid ads, this will determine the duration\/price of the ad.",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "choices": {
+                    "same": "Same as offer",
+                    "different": "Different from offer"
+                },
+                "default_value": "",
+                "return_format": "value",
+                "allow_null": 0,
+                "allow_in_bindings": 0,
+                "layout": "horizontal"
+            },
+            {
+                "key": "field_687862dd5a033",
+                "label": "Publish Offer On",
+                "name": "offer_publish_start",
+                "aria-label": "",
+                "type": "date_picker",
+                "instructions": "This is the date you would like the offer to start displaying - which may be different from the day the offer starts being available.",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_6878638a5a034",
+                            "operator": "==",
+                            "value": "different"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "display_format": "d\/m\/Y",
+                "return_format": "d\/m\/Y",
+                "first_day": 1,
+                "allow_in_bindings": 0
+            },
+            {
+                "key": "field_687864575a035",
+                "label": "Publish Offer Off",
+                "name": "publish_offer_off",
+                "aria-label": "",
+                "type": "date_picker",
+                "instructions": "This is the date you would like the offer to stop displaying - which may be different from the day the offer stops being available.",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_6878638a5a034",
+                            "operator": "==",
+                            "value": "different"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "only_front": 0,
+                "frontend_admin_display_mode": "edit",
+                "no_values_message": "",
+                "display_format": "d\/m\/Y",
+                "return_format": "d\/m\/Y",
+                "first_day": 1,
+                "allow_in_bindings": 0
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "post_type",
+                    "operator": "==",
+                    "value": "offer"
+                }
+            ]
+        ],
+        "menu_order": 0,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": 0,
+        "no_values_message": ""
+    }
+]
