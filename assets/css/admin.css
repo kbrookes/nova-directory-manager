@@ -106,4 +106,61 @@
 	.ndm-admin-sidebar {
 		width: 100%;
 	}
+}
+
+/* Offers management sections */
+.ndm-admin-section {
+	margin-bottom: 30px;
+	padding: 20px;
+	background: #f9f9f9;
+	border: 1px solid #e5e5e5;
+	border-radius: 4px;
+}
+
+.ndm-admin-section h3 {
+	margin-top: 0;
+	margin-bottom: 20px;
+	color: #23282d;
+	border-bottom: 2px solid #0073aa;
+	padding-bottom: 10px;
+}
+
+.ndm-admin-section .form-table {
+	margin-top: 0;
+}
+
+.ndm-admin-section .form-table th {
+	width: 250px;
+}
+
+.ndm-admin-section .form-table input[type="number"] {
+	width: 150px;
+}
+
+.ndm-admin-section .form-table textarea {
+	width: 100%;
+	max-width: 500px;
+}
+
+/* Statistics table */
+.ndm-admin-section .widefat {
+	margin-top: 10px;
+}
+
+.ndm-admin-section .widefat td {
+	padding: 12px;
+}
+
+.ndm-admin-section .widefat tr:nth-child(even) {
+	background-color: #f9f9f9;
+}
+
+/* Bulk actions styling */
+.ndm-admin-section select[name="bulk_action"] {
+	width: 300px;
+}
+
+/* Success/error messages */
+.ndm-admin-section .notice {
+	margin: 10px 0;
 } 

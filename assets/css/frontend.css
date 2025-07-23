@@ -264,7 +264,7 @@
 /* Hide the post title field completely */
 .ndm-acf-form .acf-field[data-name="post_title"],
 .ndm-acf-form .acf-field[data-key="_post_title"] {
-    display: none !important;
+    /*display: none !important;
 }
 
 /* Make business name field required */
