@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.24
+ * Version: 2.0.25
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.24' );
+define( 'NDM_VERSION', '2.0.25' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -169,6 +169,10 @@ class Nova_Directory_Manager {
 				wp_insert_term('YBA Member', 'advertiser_type');
 			}
 		}, 11);
+
+		// Add custom columns to business post type admin
+		add_filter('manage_business_posts_columns', array( $this, 'add_business_admin_columns' ) );
+		add_action('manage_business_posts_custom_column', array( $this, 'display_business_admin_columns' ), 10, 2 );
 
 		// Assign advertiser_type term on offer save
 		add_action('acf/save_post', function($post_id) {
@@ -3005,6 +3009,49 @@ class Nova_Directory_Manager {
 		}
 		
 		return $removed_count;
+	}
+
+	/**
+	 * Add custom columns to business post type admin.
+	 *
+	 * @param array $columns
+	 * @return array
+	 */
+	public function add_business_admin_columns( $columns ) {
+		// Insert logo column after title
+		$new_columns = array();
+		foreach ( $columns as $key => $value ) {
+			$new_columns[ $key ] = $value;
+			if ( $key === 'title' ) {
+				$new_columns['business_logo'] = __( 'Logo', 'nova-directory-manager' );
+			}
+		}
+		return $new_columns;
+	}
+
+	/**
+	 * Display custom columns in business post type admin.
+	 *
+	 * @param string $column
+	 * @param int $post_id
+	 */
+	public function display_business_admin_columns( $column, $post_id ) {
+		if ( $column === 'business_logo' ) {
+			$logo_id = get_field( 'business_logo', $post_id );
+			
+			if ( $logo_id ) {
+				$logo_url = wp_get_attachment_image_url( $logo_id, 'thumbnail' );
+				$logo_alt = get_post_meta( $logo_id, '_wp_attachment_image_alt', true );
+				
+				if ( $logo_url ) {
+					echo '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $logo_alt ) . '" style="max-width: 50px; height: auto; border-radius: 4px;" />';
+				} else {
+					echo '<span style="color: #999; font-style: italic;">' . __( 'Image not found', 'nova-directory-manager' ) . '</span>';
+				}
+			} else {
+				echo '<span style="color: #999; font-style: italic;">' . __( 'No logo', 'nova-directory-manager' ) . '</span>';
+			}
+		}
 	}
 
 	/**
