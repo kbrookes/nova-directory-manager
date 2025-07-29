@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.21
+ * Version: 2.0.22
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.21' );
+define( 'NDM_VERSION', '2.0.22' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -136,12 +136,9 @@ class Nova_Directory_Manager {
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
 		add_action( 'acf/save_post', array( $this, 'ensure_offer_author' ), 10, 1 );
 		
-		// Ensure ACF fields are always registered for offers
+		// Ensure ACF fields are always registered for offers (reduced to prevent duplicates)
 		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
 		add_action( 'init', array( $this, 'ensure_offer_acf_fields' ), 20 );
-		add_action( 'admin_init', array( $this, 'ensure_offer_acf_fields' ) );
-		add_action( 'load-post.php', array( $this, 'ensure_offer_acf_fields' ) );
-		add_action( 'load-post-new.php', array( $this, 'ensure_offer_acf_fields' ) );
 		
 		// Hook into ACF field group loading to ensure our fields are included
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
@@ -297,6 +294,12 @@ class Nova_Directory_Manager {
 			$this->register_offer_acf_fields();
 			echo '<div class="notice notice-success"><p>ACF fields registered successfully!</p></div>';
 		}
+		
+		// Handle ACF field cleanup
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'cleanup_acf_fields' && check_admin_referer( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ) ) {
+			$cleaned = $this->cleanup_duplicate_acf_field_groups();
+			echo '<div class="notice notice-success"><p>ACF field cleanup completed. Removed ' . $cleaned . ' duplicate field groups.</p></div>';
+		}
 
 		// Get available forms and post types
 		$fluent_forms = $this->get_fluent_forms();
@@ -396,6 +399,16 @@ class Nova_Directory_Manager {
 								<?php wp_nonce_field( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ); ?>
 								<input type="hidden" name="action" value="register_acf_fields" />
 								<?php submit_button( __( 'Register ACF Fields', 'nova-directory-manager' ), 'secondary', 'register_acf_fields' ); ?>
+							</form>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'ACF Field Cleanup', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'If you have duplicate ACF field groups, click the button below to clean them up.', 'nova-directory-manager' ); ?></p>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ); ?>
+								<input type="hidden" name="action" value="cleanup_acf_fields" />
+								<?php submit_button( __( 'Cleanup Duplicate ACF Fields', 'nova-directory-manager' ), 'secondary', 'cleanup_acf_fields' ); ?>
 							</form>
 						</div>
 
@@ -2788,6 +2801,13 @@ class Nova_Directory_Manager {
 	 * Ensure ACF fields are always registered for offers, even if field group is disabled.
 	 */
 	public function ensure_offer_acf_fields() {
+		// Prevent multiple calls to this method
+		static $ensured = false;
+		if ( $ensured ) {
+			return;
+		}
+		$ensured = true;
+		
 		// Register the offer ACF fields
 		$this->register_offer_acf_fields();
 		
@@ -2873,29 +2893,47 @@ class Nova_Directory_Manager {
 	private function save_field_group_to_database( $field_group ) {
 		global $wpdb;
 		
-		// First, delete any existing field group with this key to avoid conflicts
+		// Check if this field group already exists and is up to date
 		$existing = $wpdb->get_var( $wpdb->prepare(
 			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field-group' AND post_name = %s",
 			$field_group['key']
 		) );
 		
 		if ( $existing ) {
-			wp_delete_post( $existing, true );
-			error_log( 'NDM: Deleted existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+			// Check if the existing field group is identical to what we want to save
+			$existing_meta = get_post_meta( $existing, '_acf_field_group', true );
+			if ( $existing_meta && $existing_meta === $field_group ) {
+				error_log( 'NDM: Field group already exists and is identical: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+				return $existing; // Return existing ID without creating duplicate
+			}
+			
+			// Update existing field group instead of deleting and recreating
+			$post_data = array(
+				'ID'          => $existing,
+				'post_title'  => $field_group['title'],
+				'post_name'   => $field_group['key'],
+				'post_type'   => 'acf-field-group',
+				'post_status' => 'publish',
+				'post_content' => '',
+			);
+			
+			$post_id = wp_update_post( $post_data );
+			error_log( 'NDM: Updated existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+		} else {
+			// Create new field group post
+			$post_data = array(
+				'post_title'  => $field_group['title'],
+				'post_name'   => $field_group['key'],
+				'post_type'   => 'acf-field-group',
+				'post_status' => 'publish',
+				'post_content' => '',
+			);
+			
+			$post_id = wp_insert_post( $post_data );
+			error_log( 'NDM: Created new field group: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
 		}
 		
-		// Create the field group post
-		$post_data = array(
-			'post_title'  => $field_group['title'],
-			'post_name'   => $field_group['key'],
-			'post_type'   => 'acf-field-group',
-			'post_status' => 'publish',
-			'post_content' => '',
-		);
-		
-		$post_id = wp_insert_post( $post_data );
-		
-		if ( $post_id ) {
+		if ( $post_id && !is_wp_error( $post_id ) ) {
 			// Save field group data as post meta
 			update_post_meta( $post_id, '_acf_field_group', $field_group );
 			
@@ -2906,13 +2944,64 @@ class Nova_Directory_Manager {
 				}
 			}
 			
-			error_log( 'NDM: Saved field group to database: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
-			
-			// Force ACF to clear its cache
+			// Clear ACF cache more thoroughly
 			if ( function_exists( 'acf_get_cache' ) ) {
-				acf_get_cache( 'acf_get_field_groups' )->flush();
+				$cache = acf_get_cache( 'acf_get_field_groups' );
+				if ( $cache ) {
+					$cache->flush();
+				}
+			}
+			
+			// Clear WordPress object cache for this post
+			clean_post_cache( $post_id );
+			
+			return $post_id;
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Clean up duplicate ACF field groups.
+	 *
+	 * @return int Number of duplicates removed
+	 */
+	private function cleanup_duplicate_acf_field_groups() {
+		global $wpdb;
+		
+		$removed_count = 0;
+		
+		// Get all ACF field groups
+		$field_groups = $wpdb->get_results(
+			"SELECT ID, post_name, post_title FROM {$wpdb->posts} 
+			WHERE post_type = 'acf-field-group' 
+			ORDER BY post_name, ID"
+		);
+		
+		$seen_keys = array();
+		
+		foreach ( $field_groups as $field_group ) {
+			$key = $field_group->post_name;
+			
+			if ( in_array( $key, $seen_keys ) ) {
+				// This is a duplicate, remove it
+				wp_delete_post( $field_group->ID, true );
+				$removed_count++;
+				error_log( 'NDM: Removed duplicate field group: ' . $key . ' (ID: ' . $field_group->ID . ')' );
+			} else {
+				$seen_keys[] = $key;
 			}
 		}
+		
+		// Clear ACF cache after cleanup
+		if ( function_exists( 'acf_get_cache' ) ) {
+			$cache = acf_get_cache( 'acf_get_field_groups' );
+			if ( $cache ) {
+				$cache->flush();
+			}
+		}
+		
+		return $removed_count;
 	}
 
 	/**
@@ -2921,12 +3010,19 @@ class Nova_Directory_Manager {
 	public function force_acf_reload_on_offer_screens() {
 		$current_screen = get_current_screen();
 		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
-			// Force ACF to reload field groups
-			$this->register_offer_acf_fields();
+			// Only register fields once per screen load to prevent duplicates
+			static $registered = false;
+			if ( ! $registered ) {
+				$this->register_offer_acf_fields();
+				$registered = true;
+			}
 			
 			// Clear ACF cache
 			if ( function_exists( 'acf_get_cache' ) ) {
-				acf_get_cache( 'acf_get_field_groups' )->flush();
+				$cache = acf_get_cache( 'acf_get_field_groups' );
+				if ( $cache ) {
+					$cache->flush();
+				}
 			}
 			
 			// Force ACF to reload field groups
