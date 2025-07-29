@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.23
+ * Version: 2.0.24
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.23' );
+define( 'NDM_VERSION', '2.0.24' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -3039,10 +3039,15 @@ class Nova_Directory_Manager {
 		$business = $user_businesses[0];
 		$business_categories = wp_get_post_terms( $business->ID, 'category', array( 'fields' => 'ids' ) );
 
+		// Enqueue WordPress editor scripts
+		wp_enqueue_editor();
+		wp_enqueue_media();
+
 		// Handle form submission
 		if ( isset( $_POST['ndm_blog_post_submit'] ) && wp_verify_nonce( $_POST['ndm_blog_post_nonce'], 'ndm_blog_post_nonce' ) ) {
 			$post_title = sanitize_text_field( $_POST['ndm_blog_post_title'] ?? '' );
 			$post_content = wp_kses_post( $_POST['ndm_blog_post_content'] ?? '' );
+			$hero_image_id = intval( $_POST['ndm_blog_post_hero_image'] ?? 0 );
 
 			if ( ! empty( $post_title ) && ! empty( $post_content ) ) {
 				$post_data = array(
@@ -3057,6 +3062,11 @@ class Nova_Directory_Manager {
 				$post_id = wp_insert_post( $post_data );
 
 				if ( $post_id && ! is_wp_error( $post_id ) ) {
+					// Set featured image if provided
+					if ( $hero_image_id > 0 ) {
+						set_post_thumbnail( $post_id, $hero_image_id );
+					}
+
 					// Send notification to admin emails
 					$this->send_blog_post_notification( $post_id, $current_user, $business );
 
@@ -3085,8 +3095,44 @@ class Nova_Directory_Manager {
 				</div>
 
 				<div class="ndm-form-field">
+					<label for="ndm_blog_post_hero_image"><?php _e( 'Hero Image', 'nova-directory-manager' ); ?></label>
+					<div class="ndm-media-upload-field">
+						<input type="hidden" id="ndm_blog_post_hero_image" name="ndm_blog_post_hero_image" value="<?php echo esc_attr( $_POST['ndm_blog_post_hero_image'] ?? '' ); ?>" />
+						<div class="ndm-media-preview" id="ndm-media-preview">
+							<?php if ( ! empty( $_POST['ndm_blog_post_hero_image'] ) ) : ?>
+								<?php echo wp_get_attachment_image( $_POST['ndm_blog_post_hero_image'], 'medium' ); ?>
+							<?php endif; ?>
+						</div>
+						<button type="button" class="ndm-button ndm-media-upload-btn" id="ndm-media-upload-btn">
+							<?php _e( 'Select Image', 'nova-directory-manager' ); ?>
+						</button>
+						<button type="button" class="ndm-button ndm-media-remove-btn" id="ndm-media-remove-btn" style="display: none;">
+							<?php _e( 'Remove Image', 'nova-directory-manager' ); ?>
+						</button>
+					</div>
+				</div>
+
+				<div class="ndm-form-field">
 					<label for="ndm_blog_post_content"><?php _e( 'Post Content *', 'nova-directory-manager' ); ?></label>
-					<textarea id="ndm_blog_post_content" name="ndm_blog_post_content" rows="10" required class="ndm-textarea"><?php echo esc_textarea( $_POST['ndm_blog_post_content'] ?? '' ); ?></textarea>
+					<div class="ndm-editor-container">
+						<?php
+						$editor_content = $_POST['ndm_blog_post_content'] ?? '';
+						wp_editor( $editor_content, 'ndm_blog_post_content', array(
+							'textarea_name' => 'ndm_blog_post_content',
+							'media_buttons' => true,
+							'textarea_rows' => 15,
+							'editor_height' => 400,
+							'teeny' => false,
+							'tinymce' => array(
+								'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,unlink,wp_more,spellchecker,fullscreen,wp_adv',
+								'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+								'toolbar3' => '',
+								'toolbar4' => ''
+							),
+							'quicktags' => true
+						) );
+						?>
+					</div>
 				</div>
 
 				<div class="ndm-form-field">
@@ -3100,6 +3146,45 @@ class Nova_Directory_Manager {
 				</div>
 			</form>
 		</div>
+
+		<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			var mediaUploader;
+			
+			$('#ndm-media-upload-btn').on('click', function(e) {
+				e.preventDefault();
+				
+				if (mediaUploader) {
+					mediaUploader.open();
+					return;
+				}
+				
+				mediaUploader = wp.media({
+					title: '<?php _e( 'Select Hero Image', 'nova-directory-manager' ); ?>',
+					button: {
+						text: '<?php _e( 'Use this image', 'nova-directory-manager' ); ?>'
+					},
+					multiple: false
+				});
+				
+				mediaUploader.on('select', function() {
+					var attachment = mediaUploader.state().get('selection').first().toJSON();
+					$('#ndm_blog_post_hero_image').val(attachment.id);
+					$('#ndm-media-preview').html('<img src="' + attachment.sizes.medium.url + '" alt="' + attachment.title + '" style="max-width: 100%; height: auto;" />');
+					$('#ndm-media-remove-btn').show();
+				});
+				
+				mediaUploader.open();
+			});
+			
+			$('#ndm-media-remove-btn').on('click', function(e) {
+				e.preventDefault();
+				$('#ndm_blog_post_hero_image').val('');
+				$('#ndm-media-preview').empty();
+				$(this).hide();
+			});
+		});
+		</script>
 		<?php
 		return ob_get_clean();
 	}
