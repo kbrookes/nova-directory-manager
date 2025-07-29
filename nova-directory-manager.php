@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.22
+ * Version: 2.0.23
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.22' );
+define( 'NDM_VERSION', '2.0.23' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -119,6 +119,7 @@ class Nova_Directory_Manager {
 		add_shortcode( 'ndm_business_edit_form', array( $this, 'business_edit_form_shortcode' ) );
 		add_shortcode( 'ndm_business_list', array( $this, 'business_list_shortcode' ) );
 		add_shortcode( 'ndm_offer_form', array( $this, 'offer_form_shortcode' ) );
+		add_shortcode( 'ndm_blog_post_form', array( $this, 'blog_post_form_shortcode' ) );
 		add_action( 'wp_ajax_ndm_save_business', array( $this, 'ajax_save_business' ) );
 		add_action( 'wp_ajax_nopriv_ndm_save_business', array( $this, 'ajax_save_business' ) );
 		
@@ -442,6 +443,8 @@ class Nova_Directory_Manager {
 							<code>[ndm_business_list]</code>
 							<p><strong><?php _e( 'Offer Form:', 'nova-directory-manager' ); ?></strong></p>
 							<code>[ndm_offer_form]</code>
+							<p><strong><?php _e( 'Blog Post Form:', 'nova-directory-manager' ); ?></strong></p>
+							<code>[ndm_blog_post_form]</code>
 						</div>
 
 						<div class="ndm-admin-box">
@@ -3002,6 +3005,148 @@ class Nova_Directory_Manager {
 		}
 		
 		return $removed_count;
+	}
+
+	/**
+	 * Blog post form shortcode for business owners.
+	 *
+	 * @param array $atts
+	 * @return string
+	 */
+	public function blog_post_form_shortcode( $atts ) {
+		// Check if user is logged in and has business_owner role
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . __( 'You must be logged in to create blog posts.', 'nova-directory-manager' ) . '</p>';
+		}
+
+		$current_user = wp_get_current_user();
+		if ( ! in_array( 'business_owner', $current_user->roles, true ) ) {
+			return '<p>' . __( 'Only business owners can create blog posts.', 'nova-directory-manager' ) . '</p>';
+		}
+
+		// Get user's business to auto-assign category
+		$user_businesses = get_posts( array(
+			'post_type' => 'business',
+			'author' => $current_user->ID,
+			'posts_per_page' => 1,
+			'post_status' => 'publish'
+		) );
+
+		if ( empty( $user_businesses ) ) {
+			return '<p>' . __( 'You must have a published business to create blog posts.', 'nova-directory-manager' ) . '</p>';
+		}
+
+		$business = $user_businesses[0];
+		$business_categories = wp_get_post_terms( $business->ID, 'category', array( 'fields' => 'ids' ) );
+
+		// Handle form submission
+		if ( isset( $_POST['ndm_blog_post_submit'] ) && wp_verify_nonce( $_POST['ndm_blog_post_nonce'], 'ndm_blog_post_nonce' ) ) {
+			$post_title = sanitize_text_field( $_POST['ndm_blog_post_title'] ?? '' );
+			$post_content = wp_kses_post( $_POST['ndm_blog_post_content'] ?? '' );
+
+			if ( ! empty( $post_title ) && ! empty( $post_content ) ) {
+				$post_data = array(
+					'post_title' => $post_title,
+					'post_content' => $post_content,
+					'post_status' => 'draft',
+					'post_type' => 'post',
+					'post_author' => $current_user->ID,
+					'post_category' => $business_categories
+				);
+
+				$post_id = wp_insert_post( $post_data );
+
+				if ( $post_id && ! is_wp_error( $post_id ) ) {
+					// Send notification to admin emails
+					$this->send_blog_post_notification( $post_id, $current_user, $business );
+
+					return '<div class="ndm-success"><p>' . __( 'Blog post created successfully! It has been saved as a draft and will be reviewed by an administrator.', 'nova-directory-manager' ) . '</p></div>';
+				} else {
+					return '<div class="ndm-error"><p>' . __( 'Error creating blog post. Please try again.', 'nova-directory-manager' ) . '</p></div>';
+				}
+			} else {
+				return '<div class="ndm-error"><p>' . __( 'Please fill in all required fields.', 'nova-directory-manager' ) . '</p></div>';
+			}
+		}
+
+		// Output the form
+		ob_start();
+		?>
+		<div class="ndm-blog-post-form">
+			<h3><?php _e( 'Create Blog Post', 'nova-directory-manager' ); ?></h3>
+			<p><?php _e( 'Create a blog post that will be automatically assigned to your business category.', 'nova-directory-manager' ); ?></p>
+			
+			<form method="post" action="">
+				<?php wp_nonce_field( 'ndm_blog_post_nonce', 'ndm_blog_post_nonce' ); ?>
+				
+				<div class="ndm-form-field">
+					<label for="ndm_blog_post_title"><?php _e( 'Post Title *', 'nova-directory-manager' ); ?></label>
+					<input type="text" id="ndm_blog_post_title" name="ndm_blog_post_title" value="<?php echo esc_attr( $_POST['ndm_blog_post_title'] ?? '' ); ?>" required class="ndm-input" />
+				</div>
+
+				<div class="ndm-form-field">
+					<label for="ndm_blog_post_content"><?php _e( 'Post Content *', 'nova-directory-manager' ); ?></label>
+					<textarea id="ndm_blog_post_content" name="ndm_blog_post_content" rows="10" required class="ndm-textarea"><?php echo esc_textarea( $_POST['ndm_blog_post_content'] ?? '' ); ?></textarea>
+				</div>
+
+				<div class="ndm-form-field">
+					<p class="ndm-info">
+						<?php _e( 'Your blog post will be automatically assigned to your business category and saved as a draft for admin review.', 'nova-directory-manager' ); ?>
+					</p>
+				</div>
+
+				<div class="ndm-form-field">
+					<input type="submit" name="ndm_blog_post_submit" value="<?php _e( 'Create Blog Post', 'nova-directory-manager' ); ?>" class="ndm-button ndm-button-primary" />
+				</div>
+			</form>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Send notification email to admin emails when a blog post is created.
+	 *
+	 * @param int $post_id
+	 * @param WP_User $user
+	 * @param WP_Post $business
+	 */
+	private function send_blog_post_notification( $post_id, $user, $business ) {
+		$admin_emails = get_option( 'ndm_admin_emails', array() );
+		
+		if ( empty( $admin_emails ) ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		$subject = sprintf( __( 'New Blog Post Created: %s', 'nova-directory-manager' ), $post->post_title );
+		
+		$message = sprintf(
+			__( 'A new blog post has been created by a business owner:
+
+Post Title: %s
+Author: %s (%s)
+Business: %s
+Post ID: %d
+
+View the post: %s
+Edit the post: %s
+
+The post is currently in draft status and requires admin review before publication.', 'nova-directory-manager' ),
+			$post->post_title,
+			$user->display_name,
+			$user->user_email,
+			$business->post_title,
+			$post_id,
+			get_edit_post_link( $post_id ),
+			get_edit_post_link( $post_id )
+		);
+
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+
+		foreach ( $admin_emails as $email ) {
+			wp_mail( $email, $subject, $message, $headers );
+		}
 	}
 
 	/**
