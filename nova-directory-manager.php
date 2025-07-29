@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.25
+ * Version: 2.0.26
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.25' );
+define( 'NDM_VERSION', '2.0.26' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -3037,11 +3037,28 @@ class Nova_Directory_Manager {
 	 */
 	public function display_business_admin_columns( $column, $post_id ) {
 		if ( $column === 'business_logo' ) {
-			$logo_id = get_field( 'business_logo', $post_id );
+			$logo_data = get_field( 'business_logo', $post_id );
 			
-			if ( $logo_id ) {
-				$logo_url = wp_get_attachment_image_url( $logo_id, 'thumbnail' );
-				$logo_alt = get_post_meta( $logo_id, '_wp_attachment_image_alt', true );
+			// Debug: Log the data for troubleshooting
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: Business logo data for post ' . $post_id . ': ' . print_r( $logo_data, true ) );
+			}
+			
+			if ( $logo_data && is_array( $logo_data ) && isset( $logo_data['ID'] ) ) {
+				// ACF returns array format
+				$logo_id = $logo_data['ID'];
+				$logo_url = $logo_data['sizes']['thumbnail'] ?? $logo_data['url'];
+				$logo_alt = $logo_data['alt'] ?? '';
+				
+				if ( $logo_url ) {
+					echo '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $logo_alt ) . '" style="max-width: 50px; height: auto; border-radius: 4px;" />';
+				} else {
+					echo '<span style="color: #999; font-style: italic;">' . __( 'Image not found', 'nova-directory-manager' ) . '</span>';
+				}
+			} elseif ( $logo_data && is_numeric( $logo_data ) ) {
+				// Fallback for ID format
+				$logo_url = wp_get_attachment_image_url( $logo_data, 'thumbnail' );
+				$logo_alt = get_post_meta( $logo_data, '_wp_attachment_image_alt', true );
 				
 				if ( $logo_url ) {
 					echo '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $logo_alt ) . '" style="max-width: 50px; height: auto; border-radius: 4px;" />';
