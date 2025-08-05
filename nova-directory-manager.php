@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.27
+ * Version: 2.0.28
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.27' );
+define( 'NDM_VERSION', '2.0.28' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -2814,12 +2814,23 @@ class Nova_Directory_Manager {
 		}
 		$ensured = true;
 		
-		// Register the offer ACF fields
-		$this->register_offer_acf_fields();
+		// Check if field groups already exist in database
+		$offer_field_group_exists = $this->field_group_exists_in_database( 'group_687447b887b7e' );
+		$business_field_group_exists = $this->field_group_exists_in_database( 'group_683a78bc7efb6' );
 		
-		// Only log once per request to reduce log spam
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( 'NDM: ACF fields ensured for offers and businesses' );
+		// Only register if field groups are missing
+		if ( ! $offer_field_group_exists || ! $business_field_group_exists ) {
+			$this->register_offer_acf_fields();
+			
+			// Only log when actually registering fields
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: ACF fields registered - missing field groups detected' );
+			}
+		} else {
+			// Only log in debug mode when fields already exist
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: ACF fields already exist - skipping registration' );
+			}
 		}
 	}
 
@@ -2876,10 +2887,6 @@ class Nova_Directory_Manager {
 					acf_remove_local_field_group( $field_group['key'] );
 					acf_add_local_field_group( $field_group );
 					$this->save_field_group_to_database( $field_group );
-					// Only log in debug mode to reduce log spam
-					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-						error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: ' . $post_type );
-					}
 				}
 			}
 		} else {
@@ -2905,10 +2912,6 @@ class Nova_Directory_Manager {
 			// Check if the existing field group is identical to what we want to save
 			$existing_meta = get_post_meta( $existing, '_acf_field_group', true );
 			if ( $existing_meta && $existing_meta === $field_group ) {
-				// Only log in debug mode to reduce log spam
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'NDM: Field group already exists and is identical: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
-				}
 				return $existing; // Return existing ID without creating duplicate
 			}
 			
@@ -2923,10 +2926,6 @@ class Nova_Directory_Manager {
 			);
 			
 			$post_id = wp_update_post( $post_data );
-			// Only log in debug mode to reduce log spam
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'NDM: Updated existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
-			}
 		} else {
 			// Create new field group post
 			$post_data = array(
@@ -2938,10 +2937,6 @@ class Nova_Directory_Manager {
 			);
 			
 			$post_id = wp_insert_post( $post_data );
-			// Only log in debug mode to reduce log spam
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'NDM: Created new field group: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
-			}
 		}
 		
 		if ( $post_id && !is_wp_error( $post_id ) ) {
@@ -3013,6 +3008,23 @@ class Nova_Directory_Manager {
 		}
 		
 		return $removed_count;
+	}
+
+	/**
+	 * Check if a field group exists in the database.
+	 *
+	 * @param string $field_group_key
+	 * @return bool
+	 */
+	private function field_group_exists_in_database( $field_group_key ) {
+		global $wpdb;
+		
+		$exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field-group' AND post_name = %s AND post_status = 'publish'",
+			$field_group_key
+		) );
+		
+		return ! empty( $exists );
 	}
 
 	/**
