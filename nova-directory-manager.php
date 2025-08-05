@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.28
+ * Version: 2.0.29
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.28' );
+define( 'NDM_VERSION', '2.0.29' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -137,8 +137,8 @@ class Nova_Directory_Manager {
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
 		add_action( 'acf/save_post', array( $this, 'ensure_offer_author' ), 10, 1 );
 		
-		// Ensure ACF fields are always registered for offers (single hook to prevent duplicates)
-		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
+		// Only check ACF fields on plugin activation, not every page load
+		// add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
 		
 		// Hook into ACF field group loading to ensure our fields are included
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
@@ -192,9 +192,6 @@ class Nova_Directory_Manager {
 	 * @since 1.0.0
 	 */
 	public function check_fluent_forms() {
-		// Test logging
-		error_log( 'NDM: Plugin loaded and checking for Fluent Forms' );
-		
 		// Only show notice on admin pages
 		if ( is_admin() && ! $this->is_fluent_forms_active() ) {
 			add_action( 'admin_notices', array( $this, 'fluent_forms_missing_notice' ) );
@@ -754,6 +751,72 @@ class Nova_Directory_Manager {
 					// Settings tab should be a top-level form, not inside any other form
 					echo '<div class="wrap">';
 					echo '<h2>' . __( 'NDM Settings', 'nova-directory-manager' ) . '</h2>';
+					
+					// System Status Section
+					echo '<h3>' . __( 'System Status', 'nova-directory-manager' ) . '</h3>';
+					
+					// Get stored statuses
+					$acf_status = get_option( 'ndm_acf_status', array() );
+					$fluent_forms_status = get_option( 'ndm_fluent_forms_status', array() );
+					
+					// ACF Status
+					$offer_fields_exist = isset( $acf_status['offer_fields_exist'] ) ? $acf_status['offer_fields_exist'] : false;
+					$business_fields_exist = isset( $acf_status['business_fields_exist'] ) ? $acf_status['business_fields_exist'] : false;
+					$acf_last_check = isset( $acf_status['last_check'] ) ? $acf_status['last_check'] : 0;
+					
+					// Fluent Forms Status
+					$fluent_forms_active = isset( $fluent_forms_status['active'] ) ? $fluent_forms_status['active'] : false;
+					$fluent_forms_last_check = isset( $fluent_forms_status['last_check'] ) ? $fluent_forms_status['last_check'] : 0;
+					
+					echo '<table class="form-table" role="presentation">';
+					echo '<tr>';
+					echo '<th scope="row">' . __( 'ACF Fields Status', 'nova-directory-manager' ) . '</th>';
+					echo '<td>';
+					if ( $offer_fields_exist && $business_fields_exist ) {
+						echo '<span style="color: #46b450; font-weight: 600;">✓ ' . __( 'All fields registered', 'nova-directory-manager' ) . '</span>';
+					} else {
+						echo '<span style="color: #dc3232; font-weight: 600;">✗ ' . __( 'Missing fields detected', 'nova-directory-manager' ) . '</span>';
+						if ( ! $offer_fields_exist ) echo '<br><small>' . __( 'Offer fields missing', 'nova-directory-manager' ) . '</small>';
+						if ( ! $business_fields_exist ) echo '<br><small>' . __( 'Business fields missing', 'nova-directory-manager' ) . '</small>';
+					}
+					if ( $acf_last_check ) {
+						echo '<br><small>' . __( 'Last checked:', 'nova-directory-manager' ) . ' ' . date( 'Y-m-d H:i:s', $acf_last_check ) . '</small>';
+					}
+					echo '</td>';
+					echo '</tr>';
+					
+					echo '<tr>';
+					echo '<th scope="row">' . __( 'Fluent Forms Status', 'nova-directory-manager' ) . '</th>';
+					echo '<td>';
+					if ( $fluent_forms_active ) {
+						echo '<span style="color: #46b450; font-weight: 600;">✓ ' . __( 'Fluent Forms active', 'nova-directory-manager' ) . '</span>';
+					} else {
+						echo '<span style="color: #dc3232; font-weight: 600;">✗ ' . __( 'Fluent Forms not detected', 'nova-directory-manager' ) . '</span>';
+					}
+					if ( $fluent_forms_last_check ) {
+						echo '<br><small>' . __( 'Last checked:', 'nova-directory-manager' ) . ' ' . date( 'Y-m-d H:i:s', $fluent_forms_last_check ) . '</small>';
+					}
+					echo '</td>';
+					echo '</tr>';
+					echo '</table>';
+					
+					// Manual Actions
+					echo '<h3>' . __( 'Manual Actions', 'nova-directory-manager' ) . '</h3>';
+					echo '<p>' . __( 'Use these buttons to manually trigger system checks or field registration if needed.', 'nova-directory-manager' ) . '</p>';
+					
+					// Handle manual actions
+					if ( isset( $_POST['action'] ) && $_POST['action'] === 'check_system_status' && check_admin_referer( 'ndm_system_status_nonce', 'ndm_system_status_nonce_field' ) ) {
+						$this->register_acf_fields_on_activation();
+						$this->check_fluent_forms_on_activation();
+						echo '<div class="notice notice-success"><p>' . __( 'System status updated successfully!', 'nova-directory-manager' ) . '</p></div>';
+					}
+					
+					echo '<form method="post" action="">';
+					echo '<input type="hidden" name="action" value="check_system_status" />';
+					wp_nonce_field( 'ndm_system_status_nonce', 'ndm_system_status_nonce_field' );
+					echo '<p><input type="submit" class="button button-primary" value="' . __( 'Check System Status', 'nova-directory-manager' ) . '" /></p>';
+					echo '</form>';
+					
 					echo '<h3>' . __( 'Admin Notification Emails', 'nova-directory-manager' ) . '</h3>';
 					// Handle add/remove email actions
 					if ( isset( $_POST['ndm_add_admin_email'] ) && check_admin_referer( 'ndm_admin_emails_nonce', 'ndm_admin_emails_nonce_field' ) ) {
@@ -1855,8 +1918,14 @@ class Nova_Directory_Manager {
 		$this->settings = $default_settings;
 		$this->create_user_role();
 		
-		// Register offers post type and ACF fields
+		// Register offers post type
 		$this->register_offers_post_type();
+		
+		// Register ACF fields and store status
+		$this->register_acf_fields_on_activation();
+		
+		// Check Fluent Forms and store status
+		$this->check_fluent_forms_on_activation();
 		
 		// Flush rewrite rules
 		flush_rewrite_rules();
@@ -3025,6 +3094,44 @@ class Nova_Directory_Manager {
 		) );
 		
 		return ! empty( $exists );
+	}
+
+	/**
+	 * Register ACF fields on plugin activation and store status.
+	 */
+	private function register_acf_fields_on_activation() {
+		// Check if field groups already exist
+		$offer_field_group_exists = $this->field_group_exists_in_database( 'group_687447b887b7e' );
+		$business_field_group_exists = $this->field_group_exists_in_database( 'group_683a78bc7efb6' );
+		
+		$acf_status = array(
+			'registered' => false,
+			'offer_fields_exist' => $offer_field_group_exists,
+			'business_fields_exist' => $business_field_group_exists,
+			'last_check' => current_time( 'timestamp' )
+		);
+		
+		// Only register if field groups are missing
+		if ( ! $offer_field_group_exists || ! $business_field_group_exists ) {
+			$this->register_offer_acf_fields();
+			$acf_status['registered'] = true;
+		}
+		
+		// Store the status
+		update_option( 'ndm_acf_status', $acf_status );
+	}
+
+	/**
+	 * Check Fluent Forms on plugin activation and store status.
+	 */
+	private function check_fluent_forms_on_activation() {
+		$fluent_forms_status = array(
+			'active' => $this->is_fluent_forms_active(),
+			'last_check' => current_time( 'timestamp' )
+		);
+		
+		// Store the status
+		update_option( 'ndm_fluent_forms_status', $fluent_forms_status );
 	}
 
 	/**
