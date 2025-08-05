@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.26
+ * Version: 2.0.27
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.26' );
+define( 'NDM_VERSION', '2.0.27' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -137,9 +137,8 @@ class Nova_Directory_Manager {
 		add_action( 'acf/save_post', array( $this, 'sync_offer_category_from_business' ), 20, 1 );
 		add_action( 'acf/save_post', array( $this, 'ensure_offer_author' ), 10, 1 );
 		
-		// Ensure ACF fields are always registered for offers (reduced to prevent duplicates)
+		// Ensure ACF fields are always registered for offers (single hook to prevent duplicates)
 		add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
-		add_action( 'init', array( $this, 'ensure_offer_acf_fields' ), 20 );
 		
 		// Hook into ACF field group loading to ensure our fields are included
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
@@ -2808,7 +2807,7 @@ class Nova_Directory_Manager {
 	 * Ensure ACF fields are always registered for offers, even if field group is disabled.
 	 */
 	public function ensure_offer_acf_fields() {
-		// Prevent multiple calls to this method
+		// Prevent multiple calls to this method using a more robust approach
 		static $ensured = false;
 		if ( $ensured ) {
 			return;
@@ -2818,16 +2817,9 @@ class Nova_Directory_Manager {
 		// Register the offer ACF fields
 		$this->register_offer_acf_fields();
 		
-		// Also ensure fields are loaded on post edit screens
-		if ( is_admin() && isset( $_GET['post'] ) && get_post_type( $_GET['post'] ) === 'offer' ) {
-			// Force ACF to reload field groups
-			acf_get_field_groups();
-			error_log( 'NDM: Ensuring ACF fields for offer post: ' . $_GET['post'] );
-		}
-		
-		// Debug: Check if we're on an offer post edit screen
-		if ( is_admin() && isset( $_GET['post_type'] ) && $_GET['post_type'] === 'offer' ) {
-			error_log( 'NDM: On offer post type admin screen' );
+		// Only log once per request to reduce log spam
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: ACF fields ensured for offers and businesses' );
 		}
 	}
 
@@ -2884,7 +2876,10 @@ class Nova_Directory_Manager {
 					acf_remove_local_field_group( $field_group['key'] );
 					acf_add_local_field_group( $field_group );
 					$this->save_field_group_to_database( $field_group );
-					error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: ' . $post_type );
+					// Only log in debug mode to reduce log spam
+					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+						error_log( 'NDM: Registered ACF field group: ' . $field_group['key'] . ' for post type: ' . $post_type );
+					}
 				}
 			}
 		} else {
@@ -2910,7 +2905,10 @@ class Nova_Directory_Manager {
 			// Check if the existing field group is identical to what we want to save
 			$existing_meta = get_post_meta( $existing, '_acf_field_group', true );
 			if ( $existing_meta && $existing_meta === $field_group ) {
-				error_log( 'NDM: Field group already exists and is identical: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+				// Only log in debug mode to reduce log spam
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'NDM: Field group already exists and is identical: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+				}
 				return $existing; // Return existing ID without creating duplicate
 			}
 			
@@ -2925,7 +2923,10 @@ class Nova_Directory_Manager {
 			);
 			
 			$post_id = wp_update_post( $post_data );
-			error_log( 'NDM: Updated existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+			// Only log in debug mode to reduce log spam
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: Updated existing field group: ' . $field_group['key'] . ' (ID: ' . $existing . ')' );
+			}
 		} else {
 			// Create new field group post
 			$post_data = array(
@@ -2937,7 +2938,10 @@ class Nova_Directory_Manager {
 			);
 			
 			$post_id = wp_insert_post( $post_data );
-			error_log( 'NDM: Created new field group: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
+			// Only log in debug mode to reduce log spam
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: Created new field group: ' . $field_group['key'] . ' (ID: ' . $post_id . ')' );
+			}
 		}
 		
 		if ( $post_id && !is_wp_error( $post_id ) ) {
@@ -3038,11 +3042,6 @@ class Nova_Directory_Manager {
 	public function display_business_admin_columns( $column, $post_id ) {
 		if ( $column === 'business_logo' ) {
 			$logo_data = get_field( 'business_logo', $post_id );
-			
-			// Debug: Log the data for troubleshooting
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'NDM: Business logo data for post ' . $post_id . ': ' . print_r( $logo_data, true ) );
-			}
 			
 			if ( $logo_data && is_array( $logo_data ) && isset( $logo_data['ID'] ) ) {
 				// ACF returns array format
