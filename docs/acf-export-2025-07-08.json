@@ -498,7 +498,8 @@
                             "instagram": "Instagram",
                             "xhitter": "X",
                             "linkedin": "LinkedIn",
-                            "youtube": "YouTube"
+                            "youtube": "YouTube",
+                            "tiktok": "TikTok"
                         },
                         "default_value": false,
                         "return_format": "value",

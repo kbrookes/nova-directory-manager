@@ -163,4 +163,23 @@
 /* Success/error messages */
 .ndm-admin-section .notice {
 	margin: 10px 0;
+}
+
+/* Business admin columns */
+.column-business_logo {
+	width: 80px;
+	text-align: center;
+}
+
+.column-business_logo img {
+	max-width: 50px;
+	height: auto;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.column-business_logo span {
+	font-size: 12px;
+	color: #999;
+	font-style: italic;
 } 

@@ -592,4 +592,260 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Blog Post Form Styles */
+.ndm-blog-post-form {
+    max-width: 800px;
+    margin: 20px 0;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ndm-blog-post-form h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.ndm-blog-post-form p {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.ndm-blog-post-form .ndm-form-field {
+    margin-bottom: 20px;
+}
+
+.ndm-blog-post-form .ndm-form-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.ndm-blog-post-form .ndm-input,
+.ndm-blog-post-form .ndm-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    font-size: 16px;
+    line-height: 1.5;
+    transition: border-color 0.3s ease;
+}
+
+.ndm-blog-post-form .ndm-input:focus,
+.ndm-blog-post-form .ndm-textarea:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0,115,170,0.1);
+}
+
+.ndm-blog-post-form .ndm-textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.ndm-blog-post-form .ndm-info {
+    background-color: #f0f8ff;
+    border: 1px solid #b3d9ff;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 20px 0;
+    color: #005a87;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.ndm-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: 500;
+}
+
+.ndm-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: 500;
+}
+
+.ndm-blog-post-form .ndm-button {
+    background-color: #0073aa;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.ndm-blog-post-form .ndm-button:hover {
+    background-color: #005a87;
+}
+
+.ndm-blog-post-form .ndm-button-primary {
+    background-color: #0073aa;
+    color: white;
+}
+
+.ndm-blog-post-form .ndm-button-primary:hover {
+    background-color: #005a87;
+}
+
+/* Media Upload Field Styles */
+.ndm-media-upload-field {
+    margin-top: 10px;
+}
+
+.ndm-media-preview {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 2px dashed #e1e5e9;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ndm-media-preview:empty::before {
+    content: 'No image selected';
+    color: #999;
+    font-style: italic;
+}
+
+.ndm-media-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ndm-media-upload-btn,
+.ndm-media-remove-btn {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.ndm-media-remove-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.ndm-media-remove-btn:hover {
+    background-color: #c82333;
+}
+
+/* WordPress Editor Styles */
+.ndm-editor-container {
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ndm-editor-container .wp-editor-container {
+    border: none;
+}
+
+.ndm-editor-container .wp-editor-area {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 15px !important;
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+}
+
+.ndm-editor-container .wp-editor-tools {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+    padding: 8px 15px;
+}
+
+.ndm-editor-container .wp-editor-tabs {
+    margin-bottom: 0;
+}
+
+.ndm-editor-container .wp-editor-tabs .wp-switch-editor {
+    background-color: #fff;
+    border: 1px solid #e1e5e9;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ndm-editor-container .wp-editor-tabs .wp-switch-editor:hover {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.ndm-editor-container .wp-editor-tabs .wp-switch-editor.active {
+    background-color: #fff;
+    color: #0073aa;
+    border-color: #0073aa;
+}
+
+.ndm-editor-container .mce-toolbar {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.ndm-editor-container .mce-toolbar .mce-btn {
+    background-color: transparent;
+    border: none;
+    color: #666;
+}
+
+.ndm-editor-container .mce-toolbar .mce-btn:hover {
+    background-color: #e9ecef;
+    color: #333;
+}
+
+.ndm-editor-container .mce-toolbar .mce-btn.mce-active {
+    background-color: #0073aa;
+    color: white;
+}
+
+/* Mobile Responsive for Editor */
+@media (max-width: 768px) {
+    .ndm-editor-container .wp-editor-tools {
+        padding: 5px 10px;
+    }
+    
+    .ndm-editor-container .wp-editor-tabs .wp-switch-editor {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    .ndm-editor-container .wp-editor-area {
+        padding: 10px !important;
+        font-size: 16px !important;
+    }
+    
+    .ndm-media-upload-btn,
+    .ndm-media-remove-btn {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
 } 
