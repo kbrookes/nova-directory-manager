@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.32
+ * Version: 2.0.33
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.32' );
+define( 'NDM_VERSION', '2.0.33' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -2455,6 +2455,13 @@ class Nova_Directory_Manager {
 	 * Register ACF field groups for offers and businesses.
 	 */
 	private function register_offer_acf_fields() {
+		// Prevent multiple executions
+		static $registered = false;
+		if ( $registered ) {
+			return;
+		}
+		$registered = true;
+		
 		if ( ! function_exists( 'acf_add_local_field_group' ) ) {
 			return;
 		}
@@ -3058,10 +3065,45 @@ class Nova_Directory_Manager {
 	 * @param string $post_type
 	 */
 	private function register_field_groups_from_json( $json_file_path, $post_type ) {
+		// Memory monitoring
+		if ( function_exists( 'ndm_memory_usage' ) ) {
+			ndm_memory_usage();
+		}
+		
+		// Prevent multiple executions for the same file
+		static $processed_files = array();
+		$file_key = $json_file_path . '_' . $post_type;
+		if ( in_array( $file_key, $processed_files ) ) {
+			return;
+		}
+		$processed_files[] = $file_key;
 		$json_file = NDM_PLUGIN_DIR . $json_file_path;
 		if ( file_exists( $json_file ) ) {
+			// Check file size to prevent memory issues (max 100KB)
+			$file_size = filesize( $json_file );
+			if ( $file_size > 100 * 1024 ) {
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'NDM: JSON file too large (' . $file_size . ' bytes), skipping: ' . $json_file );
+				}
+				return;
+			}
+			
 			$json_content = file_get_contents( $json_file );
+			if ( $json_content === false ) {
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'NDM: Failed to read JSON file: ' . $json_file );
+				}
+				return;
+			}
+			
 			$field_groups = json_decode( $json_content, true );
+			
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'NDM: JSON decode error: ' . json_last_error_msg() . ' in file: ' . $json_file );
+				}
+				return;
+			}
 			
 			if ( is_array( $field_groups ) ) {
 				foreach ( $field_groups as &$field_group ) {
@@ -3104,11 +3146,20 @@ class Nova_Directory_Manager {
 					acf_remove_local_field_group( $field_group['key'] );
 					acf_add_local_field_group( $field_group );
 					$this->save_field_group_to_database( $field_group );
+					
+					// Memory cleanup after each field group
+					unset( $field_group );
 				}
 			}
 		} else {
-			error_log( 'NDM: ACF JSON file not found: ' . $json_file );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: ACF JSON file not found: ' . $json_file );
+			}
 		}
+		
+		// Memory cleanup
+		unset( $json_content, $field_groups );
+		wp_cache_flush();
 	}
 
 	/**
@@ -3117,6 +3168,12 @@ class Nova_Directory_Manager {
 	 * @param array $field_group
 	 */
 	private function save_field_group_to_database( $field_group ) {
+		// Prevent multiple saves of the same field group
+		static $saved_groups = array();
+		if ( in_array( $field_group['key'], $saved_groups ) ) {
+			return;
+		}
+		$saved_groups[] = $field_group['key'];
 		global $wpdb;
 		
 		// Check if this field group already exists and is up to date
