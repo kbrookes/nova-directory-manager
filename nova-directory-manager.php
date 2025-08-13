@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.30
+ * Version: 2.0.31
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.30' );
+define( 'NDM_VERSION', '2.0.31' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -989,27 +989,40 @@ class Nova_Directory_Manager {
 	 * @param array $entry Entry data.
 	 */
 	public function handle_form_submission( $form_id, $form_data, $entry ) {
+		// Memory monitoring
+		if ( function_exists( 'ndm_memory_usage' ) ) {
+			ndm_memory_usage();
+		}
 		// Check if this is the configured form
 		if ( $form_id != $this->settings['fluent_form_id'] ) {
-			error_log( "NDM: Form ID mismatch - expected {$this->settings['fluent_form_id']}, got {$form_id}" );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( "NDM: Form ID mismatch - expected {$this->settings['fluent_form_id']}, got {$form_id}" );
+			}
 			return;
 		}
 
-		error_log( 'NDM: Form submission detected for form ' . $form_id );
-		// Only log form data keys to avoid memory issues
-		error_log( 'NDM: Form data keys: ' . implode( ', ', array_keys( $form_data ) ) );
-		// Only log essential entry data
-		error_log( 'NDM: Entry ID: ' . ( isset( $entry->id ) ? $entry->id : 'N/A' ) );
+		// Only log in debug mode to reduce memory usage
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Form submission detected for form ' . $form_id );
+			// Only log form data keys to avoid memory issues
+			error_log( 'NDM: Form data keys: ' . implode( ', ', array_keys( $form_data ) ) );
+			// Only log essential entry data
+			error_log( 'NDM: Entry ID: ' . ( isset( $entry->id ) ? $entry->id : 'N/A' ) );
+		}
 
 		// Get the user ID from the entry
 		$user_id = $this->get_user_id_from_entry( $entry, $form_data );
 		
 		if ( ! $user_id ) {
-			error_log( 'NDM: No user ID found in form entry' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: No user ID found in form entry' );
+			}
 			return;
 		}
 
-		error_log( 'NDM: Found user ID: ' . $user_id );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Found user ID: ' . $user_id );
+		}
 
 		// Get the post ID from the entry
 		$post_id = $this->get_post_id_from_entry( $entry, $form_data );
@@ -1280,6 +1293,10 @@ class Nova_Directory_Manager {
 	 * Delayed role assignment to ensure it happens after Fluent Forms.
 	 */
 	public function delayed_role_assignment() {
+		// Memory monitoring
+		if ( function_exists( 'ndm_memory_usage' ) ) {
+			ndm_memory_usage();
+		}
 		// Only run this once per request using static variable
 		static $has_run = false;
 		if ( $has_run ) {
@@ -1776,12 +1793,18 @@ class Nova_Directory_Manager {
 
 		// Method 4: Check for URL-encoded data field
 		if ( isset( $form_data['data'] ) && ! empty( $form_data['data'] ) ) {
+			// Limit data size to prevent memory issues (max 1MB)
+			if ( strlen( $form_data['data'] ) > 1024 * 1024 ) {
+				error_log( "NDM: Data field too large (" . strlen( $form_data['data'] ) . " bytes), skipping parse" );
+				return;
+			}
+			
 			error_log( "NDM: Found data field, attempting to parse URL-encoded data" );
 			
 			// Parse the URL-encoded data
 			parse_str( $form_data['data'], $parsed_data );
-			error_log( "NDM: Parsed data keys: " . print_r( array_keys( $parsed_data ), true ) );
-			error_log( "NDM: Full parsed data: " . print_r( $parsed_data, true ) );
+			error_log( "NDM: Parsed data keys: " . implode( ', ', array_keys( $parsed_data ) ) );
+			error_log( "NDM: Parsed data contains " . count( $parsed_data ) . " fields" );
 			
 			// Check for category in parsed data
 			if ( isset( $parsed_data[ $category_field ] ) && ! empty( $parsed_data[ $category_field ] ) ) {
@@ -2474,6 +2497,13 @@ class Nova_Directory_Manager {
 	 * @return array
 	 */
 	private function get_offers_statistics() {
+		// Memory monitoring
+		if ( function_exists( 'ndm_memory_usage' ) ) {
+			ndm_memory_usage();
+		}
+		
+		// Limit processing to prevent memory issues
+		$max_posts = 1000; // Maximum posts to process
 		$stats = array(
 			'total'    => 0,
 			'active'   => 0,
@@ -2491,10 +2521,11 @@ class Nova_Directory_Manager {
 			'no_found_rows'  => false,
 		) );
 
-		$stats['total'] = $query->found_posts;
+		$stats['total'] = min( $query->found_posts, $max_posts );
 
 		// Process posts in batches to avoid memory issues
 		$page = 1;
+		$processed = 0;
 		do {
 			$query = new WP_Query( array(
 				'post_type'      => 'offer',
@@ -2507,6 +2538,13 @@ class Nova_Directory_Manager {
 
 			if ( $query->have_posts() ) {
 				foreach ( $query->posts as $offer_id ) {
+					$processed++;
+					
+					// Stop processing if we've reached the limit
+					if ( $processed > $max_posts ) {
+						break 2;
+					}
+					
 					$status = get_post_status( $offer_id );
 					$is_paid = get_field( 'is_paid_offer', $offer_id );
 					$price = get_field( 'offer_price', $offer_id );
@@ -2690,6 +2728,10 @@ class Nova_Directory_Manager {
 	 * @return int Number of offers approved.
 	 */
 	private function bulk_approve_offers() {
+		// Memory monitoring
+		if ( function_exists( 'ndm_memory_usage' ) ) {
+			ndm_memory_usage();
+		}
 		$count = 0;
 		$page = 1;
 		
@@ -2709,6 +2751,10 @@ class Nova_Directory_Manager {
 				) );
 				$count++;
 			}
+			
+			// Memory cleanup
+			unset( $offers );
+			wp_cache_flush();
 			
 			$page++;
 		} while ( !empty( $offers ) );
@@ -2741,6 +2787,10 @@ class Nova_Directory_Manager {
 				) );
 				$count++;
 			}
+			
+			// Memory cleanup
+			unset( $offers );
+			wp_cache_flush();
 			
 			$page++;
 		} while ( !empty( $offers ) );
@@ -2775,6 +2825,10 @@ class Nova_Directory_Manager {
 				}
 			}
 			
+			// Memory cleanup
+			unset( $offers );
+			wp_cache_flush();
+			
 			$page++;
 		} while ( !empty( $offers ) );
 
@@ -2806,6 +2860,10 @@ class Nova_Directory_Manager {
 					$count++;
 				}
 			}
+			
+			// Memory cleanup
+			unset( $offers );
+			wp_cache_flush();
 			
 			$page++;
 		} while ( !empty( $offers ) );
