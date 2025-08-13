@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.31
+ * Version: 2.0.32
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.31' );
+define( 'NDM_VERSION', '2.0.32' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -144,7 +144,7 @@ class Nova_Directory_Manager {
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
 		
 		// Force ACF to reload field groups on offer post screens (only when needed)
-		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ) );
+		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ), 999 );
 
 		// Register the Advertiser Type taxonomy for offers
 		add_action('init', function() {
@@ -1095,7 +1095,15 @@ class Nova_Directory_Manager {
 	 * @param int $user_id User ID.
 	 */
 	public function handle_user_registration( $user_id ) {
-		error_log( 'NDM: User registration detected for user: ' . $user_id );
+		// Skip if user already has a role (prevents infinite loops)
+		$user = get_user_by( 'ID', $user_id );
+		if ( $user && ! empty( $user->roles ) ) {
+			return;
+		}
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: User registration detected for user: ' . $user_id );
+		}
 		
 		// Get user email to find stored data
 		$user = get_user_by( 'ID', $user_id );
@@ -1172,8 +1180,16 @@ class Nova_Directory_Manager {
 		if ( $update || $post->post_type !== $this->settings['post_type'] ) {
 			return;
 		}
+		
+		// Skip if post already has an author (prevents infinite loops)
+		if ( $post->post_author && $post->post_author != 0 ) {
+			return;
+		}
 
-		error_log( 'NDM: Post creation detected for post: ' . $post_id . ' of type: ' . $post->post_type );
+		// Only log in debug mode
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Post creation detected for post: ' . $post_id . ' of type: ' . $post->post_type );
+		}
 		
 		// Store the post ID for later processing when user is registered
 		$recent_posts = get_transient( 'ndm_recent_posts' ) ?: array();
@@ -1188,13 +1204,19 @@ class Nova_Directory_Manager {
 		}
 		
 		set_transient( 'ndm_recent_posts', $recent_posts, 300 );
-		error_log( 'NDM: Stored post ' . $post_id . ' for later processing' );
+		
+		// Only log in debug mode
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Stored post ' . $post_id . ' for later processing' );
+		}
 		
 		// Try to find the user who created this post
 		$user_id = $this->find_user_for_post( $post_id );
 		
 		if ( $user_id ) {
-			error_log( 'NDM: Found user for post: ' . $user_id );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: Found user for post: ' . $user_id );
+			}
 			
 			// Assign user as post author
 			$this->assign_user_to_post( $post_id, $user_id );
@@ -1202,7 +1224,9 @@ class Nova_Directory_Manager {
 			// Try to assign category
 			$this->assign_category_from_stored_data( $post_id, $user_id );
 		} else {
-			error_log( 'NDM: No user found for post: ' . $post_id . '. Will process when user is registered.' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: No user found for post: ' . $post_id . '. Will process when user is registered.' );
+			}
 		}
 	}
 
@@ -1274,11 +1298,15 @@ class Nova_Directory_Manager {
 		}
 
 		if ( ! $stored_data ) {
-			error_log( 'NDM: No stored data found for category assignment for user: ' . $user_id );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: No stored data found for category assignment for user: ' . $user_id );
+			}
 			return;
 		}
 
-		error_log( 'NDM: Found stored data for category assignment with ' . count( $stored_data ) . ' keys' );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Found stored data for category assignment with ' . count( $stored_data ) . ' keys' );
+		}
 		
 		// Use the same category assignment logic
 		$this->assign_category_to_post( $post_id, $stored_data );
@@ -1724,9 +1752,13 @@ class Nova_Directory_Manager {
 		$result = wp_update_post( $post_data );
 
 		if ( $result ) {
-			error_log( "NDM: Successfully assigned user {$user_id} as author of post {$post_id}" );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( "NDM: Successfully assigned user {$user_id} as author of post {$post_id}" );
+			}
 		} else {
-			error_log( "NDM: Failed to assign user {$user_id} as author of post {$post_id}" );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( "NDM: Failed to assign user {$user_id} as author of post {$post_id}" );
+			}
 		}
 	}
 
@@ -2248,9 +2280,16 @@ class Nova_Directory_Manager {
 		if ( get_post_type( $post_id ) !== 'business' ) {
 			return;
 		}
+		
+		// Skip if this is an autosave or revision
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
 
 		// Log the save for debugging
-		error_log( 'NDM: ACF form save triggered for business post ID: ' . $post_id );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: ACF form save triggered for business post ID: ' . $post_id );
+		}
 
 		// Get the current user
 		$current_user = wp_get_current_user();
@@ -3549,9 +3588,13 @@ The post is currently in draft status and requires admin review before publicati
 				}
 				
 				// Force ACF to reload field groups
-				acf_get_field_groups();
+				if ( function_exists( 'acf_get_field_groups' ) ) {
+					acf_get_field_groups();
+				}
 				
-				error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
+				}
 			}
 		}
 	}
