@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.29
+ * Version: 2.0.30
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.29' );
+define( 'NDM_VERSION', '2.0.30' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -143,7 +143,7 @@ class Nova_Directory_Manager {
 		// Hook into ACF field group loading to ensure our fields are included
 		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
 		
-		// Force ACF to reload field groups on offer post screens
+		// Force ACF to reload field groups on offer post screens (only when needed)
 		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ) );
 
 		// Register the Advertiser Type taxonomy for offers
@@ -996,8 +996,10 @@ class Nova_Directory_Manager {
 		}
 
 		error_log( 'NDM: Form submission detected for form ' . $form_id );
-		error_log( 'NDM: Form data: ' . print_r( $form_data, true ) );
-		error_log( 'NDM: Entry data: ' . print_r( $entry, true ) );
+		// Only log form data keys to avoid memory issues
+		error_log( 'NDM: Form data keys: ' . implode( ', ', array_keys( $form_data ) ) );
+		// Only log essential entry data
+		error_log( 'NDM: Entry ID: ' . ( isset( $entry->id ) ? $entry->id : 'N/A' ) );
 
 		// Get the user ID from the entry
 		$user_id = $this->get_user_id_from_entry( $entry, $form_data );
@@ -1110,7 +1112,8 @@ class Nova_Directory_Manager {
 
 		if ( $stored_data ) {
 			error_log( 'NDM: Found stored form data for user: ' . $user_id );
-			error_log( 'NDM: Stored data: ' . print_r( $stored_data, true ) );
+			// Only log essential data to avoid memory issues
+			error_log( 'NDM: Stored data keys: ' . implode( ', ', array_keys( $stored_data ) ) );
 			
 			// Assign user role
 			$this->assign_user_role( $user_id );
@@ -1262,7 +1265,7 @@ class Nova_Directory_Manager {
 			return;
 		}
 
-		error_log( 'NDM: Found stored data for category assignment: ' . print_r( $stored_data, true ) );
+		error_log( 'NDM: Found stored data for category assignment with ' . count( $stored_data ) . ' keys' );
 		
 		// Use the same category assignment logic
 		$this->assign_category_to_post( $post_id, $stored_data );
@@ -1277,10 +1280,12 @@ class Nova_Directory_Manager {
 	 * Delayed role assignment to ensure it happens after Fluent Forms.
 	 */
 	public function delayed_role_assignment() {
-		// Only run this once per request
-		if ( did_action( 'wp_loaded' ) > 1 ) {
+		// Only run this once per request using static variable
+		static $has_run = false;
+		if ( $has_run ) {
 			return;
 		}
+		$has_run = true;
 
 		// Check for users that need role assignment
 		$pending_users = get_transient( 'ndm_pending_role_assignment' );
@@ -1288,7 +1293,7 @@ class Nova_Directory_Manager {
 			return;
 		}
 
-		error_log( 'NDM: Running delayed role assignment for users: ' . print_r( $pending_users, true ) );
+		error_log( 'NDM: Running delayed role assignment for ' . count( $pending_users ) . ' users' );
 
 		foreach ( $pending_users as $user_id ) {
 			$user = get_user_by( 'ID', $user_id );
@@ -1304,7 +1309,7 @@ class Nova_Directory_Manager {
 				continue;
 			}
 
-			error_log( "NDM: Delayed role assignment - User {$user_id} current roles: " . print_r( $user->roles, true ) );
+			error_log( "NDM: Delayed role assignment - User {$user_id} current roles: " . implode( ', ', $user->roles ) );
 			
 			// Check if user has administrative capabilities - if so, don't change their role
 			if ( $user->has_cap( 'manage_options' ) || $user->has_cap( 'administrator' ) ) {
@@ -1317,7 +1322,7 @@ class Nova_Directory_Manager {
 			
 			// Verify the assignment
 			$user_after = get_user_by( 'ID', $user_id );
-			error_log( "NDM: Delayed role assignment - User {$user_id} roles after: " . print_r( $user_after->roles, true ) );
+			error_log( "NDM: Delayed role assignment - User {$user_id} roles after: " . implode( ', ', $user_after->roles ) );
 		}
 
 		// Clear the pending list
@@ -1356,7 +1361,7 @@ class Nova_Directory_Manager {
 				continue;
 			}
 
-			error_log( "NDM: Cron role assignment - User {$user->ID} current roles: " . print_r( $user->roles, true ) );
+			error_log( "NDM: Cron role assignment - User {$user->ID} current roles: " . implode( ', ', $user->roles ) );
 			
 			// Check if user has administrative capabilities - if so, don't change their role
 			if ( $user->has_cap( 'manage_options' ) || $user->has_cap( 'administrator' ) ) {
@@ -1369,7 +1374,7 @@ class Nova_Directory_Manager {
 			
 			// Verify the assignment
 			$user_after = get_user_by( 'ID', $user->ID );
-			error_log( "NDM: Cron role assignment - User {$user->ID} roles after: " . print_r( $user_after->roles, true ) );
+			error_log( "NDM: Cron role assignment - User {$user->ID} roles after: " . implode( ', ', $user_after->roles ) );
 		}
 	}
 
@@ -1436,7 +1441,7 @@ class Nova_Directory_Manager {
 		$role_name = $this->settings['user_role_name'];
 		$role = get_role( $role_name );
 		if ( $role ) {
-			error_log( 'NDM: Role ' . $role_name . ' exists with capabilities: ' . print_r( $role->capabilities, true ) );
+			error_log( 'NDM: Role ' . $role_name . ' exists with ' . count( $role->capabilities ) . ' capabilities' );
 		} else {
 			error_log( 'NDM: Role ' . $role_name . ' does NOT exist!' );
 		}
@@ -1446,7 +1451,7 @@ class Nova_Directory_Manager {
 		error_log( 'NDM: Found ' . count( $forms ) . ' Fluent Forms' );
 		
 		// Test settings
-		error_log( 'NDM: Current settings: ' . print_r( $this->settings, true ) );
+		error_log( 'NDM: Settings loaded with ' . count( $this->settings ) . ' options' );
 		
 		wp_die( 'BDRM Test completed. Check error logs for details.' );
 	}
@@ -1475,17 +1480,17 @@ class Nova_Directory_Manager {
 		$form_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id = %d", $form_id ) );
 		
 		if ( $form_data ) {
-			error_log( 'NDM: Form data: ' . print_r( $form_data, true ) );
+			error_log( 'NDM: Form data keys: ' . implode( ', ', array_keys( $form_data ) ) );
 			
 			// Try to decode the form fields
 			$form_fields = json_decode( $form_data->form_fields, true );
 			if ( $form_fields ) {
-				error_log( 'NDM: Form fields: ' . print_r( $form_fields, true ) );
+				error_log( 'NDM: Form has ' . count( $form_fields ) . ' fields' );
 				
 				// Look for category fields
 				foreach ( $form_fields as $field ) {
 					if ( isset( $field['element'] ) && $field['element'] === 'select' ) {
-						error_log( 'NDM: Found select field: ' . $field['attributes']['name'] . ' with options: ' . print_r( $field['options'], true ) );
+						error_log( 'NDM: Found select field: ' . $field['attributes']['name'] . ' with ' . count( $field['options'] ) . ' options' );
 					}
 				}
 			}
@@ -1632,7 +1637,7 @@ class Nova_Directory_Manager {
 			$this->load_settings();
 		}
 		
-		error_log( "NDM: Current settings: " . print_r( $this->settings, true ) );
+		error_log( "NDM: Settings loaded with " . count( $this->settings ) . " options" );
 		
 		$user = get_user_by( 'ID', $user_id );
 		if ( ! $user ) {
@@ -1642,7 +1647,7 @@ class Nova_Directory_Manager {
 
 		$role_name = $this->settings['user_role_name'] ?? 'business_owner';
 		error_log( "NDM: Attempting to assign role '{$role_name}' to user {$user_id}" );
-		error_log( "NDM: User current roles: " . print_r( $user->roles, true ) );
+		error_log( "NDM: User current roles: " . implode( ', ', $user->roles ) );
 		
 		// Check if the role exists
 		$role = get_role( $role_name );
@@ -1669,16 +1674,16 @@ class Nova_Directory_Manager {
 				error_log( "NDM: Admin user {$user_id} would be changed to {$role_name} - preserving admin role" );
 				return;
 			}
-			error_log( "NDM: User {$user_id} has different roles: " . print_r( $user->roles, true ) . ". Changing to {$role_name}" );
+			error_log( "NDM: User {$user_id} has different roles: " . implode( ', ', $user->roles ) . ". Changing to {$role_name}" );
 		}
 
 		// Assign the role (this will replace any existing roles)
 		$result = $user->set_role( $role_name );
-		error_log( "NDM: set_role() result: " . print_r( $result, true ) );
+		error_log( "NDM: set_role() result: " . ( $result ? 'success' : 'failed' ) );
 		
 		// Verify the role was assigned
 		$user_after = get_user_by( 'ID', $user_id );
-		error_log( "NDM: User roles after assignment: " . print_r( $user_after->roles, true ) );
+		error_log( "NDM: User roles after assignment: " . implode( ', ', $user_after->roles ) );
 		
 		if ( in_array( $role_name, $user_after->roles ) ) {
 			error_log( "NDM: Successfully assigned role {$role_name} to user {$user_id}" );
@@ -1718,8 +1723,8 @@ class Nova_Directory_Manager {
 		$category_field = $this->settings['category_field'];
 		
 		error_log( "NDM: Attempting to assign category from field: {$category_field}" );
-		error_log( "NDM: Current settings: " . print_r( $this->settings, true ) );
-		error_log( "NDM: Form data keys: " . print_r( array_keys( $form_data ), true ) );
+		error_log( "NDM: Settings loaded with " . count( $this->settings ) . " options" );
+		error_log( "NDM: Form data keys: " . implode( ', ', array_keys( $form_data ) ) );
 		
 		// Method 1: Check form_data directly
 		if ( isset( $form_data[ $category_field ] ) && ! empty( $form_data[ $category_field ] ) ) {
@@ -2477,41 +2482,59 @@ class Nova_Directory_Manager {
 			'revenue'  => 0.00,
 		);
 
-		// Get all offers
-		$offers = get_posts( array(
+		// Use WP_Query with pagination instead of get_posts with -1
+		$query = new WP_Query( array(
 			'post_type'      => 'offer',
 			'post_status'    => 'any',
-			'numberposts'    => -1,
+			'posts_per_page' => 100, // Process in batches
 			'fields'         => 'ids',
+			'no_found_rows'  => false,
 		) );
 
-		$stats['total'] = count( $offers );
+		$stats['total'] = $query->found_posts;
 
-		foreach ( $offers as $offer_id ) {
-			$status = get_post_status( $offer_id );
-			$is_paid = get_field( 'is_paid_offer', $offer_id );
-			$price = get_field( 'offer_price', $offer_id );
-			$expiry_date = get_field( 'expiry_date', $offer_id );
+		// Process posts in batches to avoid memory issues
+		$page = 1;
+		do {
+			$query = new WP_Query( array(
+				'post_type'      => 'offer',
+				'post_status'    => 'any',
+				'posts_per_page' => 100,
+				'paged'          => $page,
+				'fields'         => 'ids',
+				'no_found_rows'  => false,
+			) );
 
-			// Count by status
-			if ( $status === 'publish' ) {
-				$stats['active']++;
-			} elseif ( $status === 'pending' ) {
-				$stats['pending']++;
-			} elseif ( $status === 'draft' ) {
-				$stats['pending']++;
+			if ( $query->have_posts() ) {
+				foreach ( $query->posts as $offer_id ) {
+					$status = get_post_status( $offer_id );
+					$is_paid = get_field( 'is_paid_offer', $offer_id );
+					$price = get_field( 'offer_price', $offer_id );
+					$expiry_date = get_field( 'expiry_date', $offer_id );
+
+					// Count by status
+					if ( $status === 'publish' ) {
+						$stats['active']++;
+					} elseif ( $status === 'pending' || $status === 'draft' ) {
+						$stats['pending']++;
+					}
+
+					// Check if expired
+					if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
+						$stats['expired']++;
+					}
+
+					// Calculate revenue (only for paid offers)
+					if ( $is_paid && $price ) {
+						$stats['revenue'] += floatval( $price );
+					}
+				}
 			}
 
-			// Check if expired
-			if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
-				$stats['expired']++;
-			}
+			$page++;
+		} while ( $query->have_posts() && $page <= ceil( $stats['total'] / 100 ) );
 
-			// Calculate revenue (only for paid offers)
-			if ( $is_paid && $price ) {
-				$stats['revenue'] += floatval( $price );
-			}
-		}
+		wp_reset_postdata();
 
 		return $stats;
 	}
@@ -2667,21 +2690,28 @@ class Nova_Directory_Manager {
 	 * @return int Number of offers approved.
 	 */
 	private function bulk_approve_offers() {
-		$offers = get_posts( array(
-			'post_type'   => 'offer',
-			'post_status' => array( 'pending', 'draft' ),
-			'numberposts' => -1,
-			'fields'      => 'ids',
-		) );
-
 		$count = 0;
-		foreach ( $offers as $offer_id ) {
-			wp_update_post( array(
-				'ID'          => $offer_id,
-				'post_status' => 'publish',
+		$page = 1;
+		
+		do {
+			$offers = get_posts( array(
+				'post_type'   => 'offer',
+				'post_status' => array( 'pending', 'draft' ),
+				'posts_per_page' => 50,
+				'paged' => $page,
+				'fields'      => 'ids',
 			) );
-			$count++;
-		}
+
+			foreach ( $offers as $offer_id ) {
+				wp_update_post( array(
+					'ID'          => $offer_id,
+					'post_status' => 'publish',
+				) );
+				$count++;
+			}
+			
+			$page++;
+		} while ( !empty( $offers ) );
 
 		return $count;
 	}
@@ -2692,21 +2722,28 @@ class Nova_Directory_Manager {
 	 * @return int Number of offers expired.
 	 */
 	private function bulk_expire_offers() {
-		$offers = get_posts( array(
-			'post_type'   => 'offer',
-			'post_status' => 'publish',
-			'numberposts' => -1,
-			'fields'      => 'ids',
-		) );
-
 		$count = 0;
-		foreach ( $offers as $offer_id ) {
-			wp_update_post( array(
-				'ID'          => $offer_id,
-				'post_status' => 'draft',
+		$page = 1;
+		
+		do {
+			$offers = get_posts( array(
+				'post_type'   => 'offer',
+				'post_status' => 'publish',
+				'posts_per_page' => 50,
+				'paged' => $page,
+				'fields'      => 'ids',
 			) );
-			$count++;
-		}
+
+			foreach ( $offers as $offer_id ) {
+				wp_update_post( array(
+					'ID'          => $offer_id,
+					'post_status' => 'draft',
+				) );
+				$count++;
+			}
+			
+			$page++;
+		} while ( !empty( $offers ) );
 
 		return $count;
 	}
@@ -2717,22 +2754,29 @@ class Nova_Directory_Manager {
 	 * @return int Number of offers extended.
 	 */
 	private function bulk_extend_offers() {
-		$offers = get_posts( array(
-			'post_type'   => 'offer',
-			'post_status' => 'any',
-			'numberposts' => -1,
-			'fields'      => 'ids',
-		) );
-
 		$count = 0;
-		foreach ( $offers as $offer_id ) {
-			$expiry_date = get_field( 'expiry_date', $offer_id );
-			if ( $expiry_date ) {
-				$new_expiry = date( 'Y-m-d', strtotime( $expiry_date . ' +30 days' ) );
-				update_field( 'expiry_date', $new_expiry, $offer_id );
-				$count++;
+		$page = 1;
+		
+		do {
+			$offers = get_posts( array(
+				'post_type'   => 'offer',
+				'post_status' => 'any',
+				'posts_per_page' => 50,
+				'paged' => $page,
+				'fields'      => 'ids',
+			) );
+
+			foreach ( $offers as $offer_id ) {
+				$expiry_date = get_field( 'expiry_date', $offer_id );
+				if ( $expiry_date ) {
+					$new_expiry = date( 'Y-m-d', strtotime( $expiry_date . ' +30 days' ) );
+					update_field( 'expiry_date', $new_expiry, $offer_id );
+					$count++;
+				}
 			}
-		}
+			
+			$page++;
+		} while ( !empty( $offers ) );
 
 		return $count;
 	}
@@ -2743,21 +2787,28 @@ class Nova_Directory_Manager {
 	 * @return int Number of offers deleted.
 	 */
 	private function bulk_delete_expired_offers() {
-		$offers = get_posts( array(
-			'post_type'   => 'offer',
-			'post_status' => 'any',
-			'numberposts' => -1,
-			'fields'      => 'ids',
-		) );
-
 		$count = 0;
-		foreach ( $offers as $offer_id ) {
-			$expiry_date = get_field( 'expiry_date', $offer_id );
-			if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
-				wp_delete_post( $offer_id, true );
-				$count++;
+		$page = 1;
+		
+		do {
+			$offers = get_posts( array(
+				'post_type'   => 'offer',
+				'post_status' => 'any',
+				'posts_per_page' => 50,
+				'paged' => $page,
+				'fields'      => 'ids',
+			) );
+
+			foreach ( $offers as $offer_id ) {
+				$expiry_date = get_field( 'expiry_date', $offer_id );
+				if ( $expiry_date && strtotime( $expiry_date ) < time() ) {
+					wp_delete_post( $offer_id, true );
+					$count++;
+				}
 			}
-		}
+			
+			$page++;
+		} while ( !empty( $offers ) );
 
 		return $count;
 	}
@@ -3429,18 +3480,21 @@ The post is currently in draft status and requires admin review before publicati
 				$registered = true;
 			}
 			
-			// Clear ACF cache
-			if ( function_exists( 'acf_get_cache' ) ) {
-				$cache = acf_get_cache( 'acf_get_field_groups' );
-				if ( $cache ) {
-					$cache->flush();
+			// Only clear cache and reload if we're on the edit screen
+			if ( in_array( $current_screen->base, array( 'post', 'post-new' ) ) ) {
+				// Clear ACF cache
+				if ( function_exists( 'acf_get_cache' ) ) {
+					$cache = acf_get_cache( 'acf_get_field_groups' );
+					if ( $cache ) {
+						$cache->flush();
+					}
 				}
+				
+				// Force ACF to reload field groups
+				acf_get_field_groups();
+				
+				error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
 			}
-			
-			// Force ACF to reload field groups
-			acf_get_field_groups();
-			
-			error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
 		}
 	}
 
