@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.33
+ * Version: 2.0.34
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.33' );
+define( 'NDM_VERSION', '2.0.34' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -302,6 +302,13 @@ class Nova_Directory_Manager {
 			echo '<div class="notice notice-success"><p>ACF field cleanup completed. Removed ' . $cleaned . ' duplicate field groups.</p></div>';
 		}
 
+		// Handle ACF field registration toggle
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'toggle_auto_registration' && check_admin_referer( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ) ) {
+			$disable_auto_registration = isset( $_POST['disable_auto_registration'] ) ? true : false;
+			update_option( 'ndm_disable_auto_field_registration', $disable_auto_registration );
+			echo '<div class="notice notice-success"><p>ACF field registration settings updated successfully!</p></div>';
+		}
+
 		// Get available forms and post types
 		$fluent_forms = $this->get_fluent_forms();
 		$post_types = $this->get_post_types();
@@ -411,6 +418,29 @@ class Nova_Directory_Manager {
 								<input type="hidden" name="action" value="cleanup_acf_fields" />
 								<?php submit_button( __( 'Cleanup Duplicate ACF Fields', 'nova-directory-manager' ), 'secondary', 'cleanup_acf_fields' ); ?>
 							</form>
+						</div>
+
+						<div class="ndm-admin-box">
+							<h3><?php _e( 'ACF Field Registration Control', 'nova-directory-manager' ); ?></h3>
+							<p><?php _e( 'Control automatic ACF field group registration to prevent conflicts with manual field group creation.', 'nova-directory-manager' ); ?></p>
+							<?php
+							$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
+							?>
+							<form method="post" action="">
+								<?php wp_nonce_field( 'ndm_acf_fields_nonce', 'ndm_acf_nonce' ); ?>
+								<input type="hidden" name="action" value="toggle_auto_registration" />
+								<label>
+									<input type="checkbox" name="disable_auto_registration" value="1" <?php checked( $disable_auto_registration ); ?> />
+									<?php _e( 'Disable automatic field group registration', 'nova-directory-manager' ); ?>
+								</label>
+								<br><br>
+								<?php submit_button( __( 'Update Registration Settings', 'nova-directory-manager' ), 'secondary', 'update_registration_settings' ); ?>
+							</form>
+							<?php if ( $disable_auto_registration ) : ?>
+								<p><em><?php _e( 'Note: Automatic registration is disabled. You can manually create field groups without interference.', 'nova-directory-manager' ); ?></em></p>
+							<?php else : ?>
+								<p><em><?php _e( 'Note: Automatic registration is enabled. This may interfere with manual field group creation.', 'nova-directory-manager' ); ?></em></p>
+							<?php endif; ?>
 						</div>
 
 						<div class="ndm-admin-box">
@@ -3070,6 +3100,15 @@ class Nova_Directory_Manager {
 			ndm_memory_usage();
 		}
 		
+		// Check if automatic field group registration is disabled
+		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
+		if ( $disable_auto_registration ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'NDM: Automatic field group registration is disabled' );
+			}
+			return;
+		}
+		
 		// Prevent multiple executions for the same file
 		static $processed_files = array();
 		$file_key = $json_file_path . '_' . $post_type;
@@ -3107,6 +3146,14 @@ class Nova_Directory_Manager {
 			
 			if ( is_array( $field_groups ) ) {
 				foreach ( $field_groups as &$field_group ) {
+					// Check if this field group already exists in the database
+					if ( $this->field_group_exists_in_database( $field_group['key'] ) ) {
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'NDM: Field group already exists in database, skipping: ' . $field_group['key'] );
+						}
+						continue;
+					}
+					
 					// Ensure the field group is always active for our plugin
 					$field_group['active'] = true;
 					$field_group['local'] = 'json';
@@ -3625,6 +3672,12 @@ The post is currently in draft status and requires admin review before publicati
 	 * Force ACF to reload field groups on offer and business post screens.
 	 */
 	public function force_acf_reload_on_offer_screens() {
+		// Check if automatic field group registration is disabled
+		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
+		if ( $disable_auto_registration ) {
+			return;
+		}
+		
 		$current_screen = get_current_screen();
 		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
 			// Only register fields once per screen load to prevent duplicates
@@ -3663,6 +3716,12 @@ The post is currently in draft status and requires admin review before publicati
 	 * @return array
 	 */
 	public function force_offer_field_groups( $field_groups ) {
+		// Check if automatic field group registration is disabled
+		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
+		if ( $disable_auto_registration ) {
+			return $field_groups;
+		}
+		
 		// Check if we're on an offer or business post type
 		$current_screen = get_current_screen();
 		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
