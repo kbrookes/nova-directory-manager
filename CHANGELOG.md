@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.39] - 2025-01-XX
+
+### 🎨 Frontend Form Styling Improvements
+
+#### Fixed
+- **Duplicate Submit Button**: Removed extra "Update Business" button from ACF form
+- **Button Styling**: Fixed styling for "Add Row" and "Add Social Media Account" buttons
+- **Category Grid Spacing**: Tightened vertical spacing in category selection grid
+- **CSS Syntax Error**: Fixed commented-out CSS rule causing syntax issues
+
+#### Improved
+- **Form Cleanliness**: Single blue submit button for cleaner interface
+- **Button Consistency**: All ACF "add" buttons now use red background (#EB2127)
+- **Space Efficiency**: Category grid items take up less vertical space
+- **Visual Hierarchy**: Better separation between form sections
+
+#### Technical Changes
+- **Enhanced**: ACF form configuration to hide duplicate submit button
+- **Updated**: CSS styling for category checkboxes with reduced padding and line-height
+- **Added**: Consistent red button styling for all ACF add buttons
+- **Fixed**: CSS syntax and display rules
+
 ## [2.0.38] - 2025-01-XX
 
 ### ✨ Business Category Management in Frontend Editor

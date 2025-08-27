@@ -130,14 +130,14 @@
 .ndm-categories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+    gap: 10px;
     margin-top: 15px;
 }
 
 .ndm-category-checkbox {
     display: flex;
     align-items: center;
-    padding: 12px 15px;
+    padding: 8px 12px;
     background: #fff;
     border: 2px solid #e5e5e5;
     border-radius: 6px;
@@ -145,6 +145,7 @@
     transition: all 0.2s ease;
     font-size: 14px;
     font-weight: 500;
+    line-height: 1.2;
 }
 
 .ndm-category-checkbox:hover {
@@ -296,7 +297,7 @@
 }
 
 .ndm-acf-form .acf-field-repeater .acf-button {
-    background: var(--primary, #0073aa) !important;
+    background: #EB2127 !important;
     color: #fff !important;
     border: none !important;
     padding: 6px 12px !important;
@@ -305,10 +306,43 @@
     font-size: 13px !important;
 }
 
+.ndm-acf-form .acf-field-repeater .acf-button:hover {
+    background: #d41b21 !important;
+    color: #fff !important;
+}
+
 .ndm-acf-form .acf-form-submit {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #eee;
+}
+
+/* Hide ACF submit button since we have our own */
+.ndm-acf-form .acf-form-submit input[type="submit"] {
+    display: none !important;
+}
+
+/* Style all ACF add buttons with red background */
+.ndm-acf-form .acf-button,
+.ndm-acf-form .acf-add-row,
+.ndm-acf-form .acf-add-social-media {
+    background: #EB2127 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    transition: background 0.2s ease !important;
+}
+
+.ndm-acf-form .acf-button:hover,
+.ndm-acf-form .acf-add-row:hover,
+.ndm-acf-form .acf-add-social-media:hover {
+    background: #d41b21 !important;
+    color: #fff !important;
 }
 
 .ndm-acf-form .acf-form-submit input[type="submit"] {
@@ -378,7 +412,7 @@
 /* Hide the post title field completely */
 .ndm-acf-form .acf-field[data-name="post_title"],
 .ndm-acf-form .acf-field[data-key="_post_title"] {
-    /*display: none !important;
+    display: none !important;
 }
 
 /* Make business name field required */
