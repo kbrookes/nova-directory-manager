@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.35
+ * Version: 2.0.36
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.35' );
+define( 'NDM_VERSION', '2.0.36' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -3676,12 +3676,6 @@ The post is currently in draft status and requires admin review before publicati
 	 * Force ACF to reload field groups on offer and business post screens.
 	 */
 	public function force_acf_reload_on_offer_screens() {
-		// Check if automatic field group registration is disabled
-		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
-		if ( $disable_auto_registration ) {
-			return;
-		}
-		
 		$current_screen = get_current_screen();
 		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
 			// Only register fields once per screen load to prevent duplicates
@@ -3720,16 +3714,10 @@ The post is currently in draft status and requires admin review before publicati
 	 * @return array
 	 */
 	public function force_offer_field_groups( $field_groups ) {
-		// Always ensure our field groups are included, regardless of auto registration setting
-		// This is critical for the plugin to function properly
-		
 		// Check if we're on an offer or business post type
 		$current_screen = get_current_screen();
 		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
-			// Ensure our field groups are included
-			$this->register_offer_acf_fields();
-			
-			// Get the appropriate field group from our JSON
+			// Get the appropriate field group from our JSON based on current post type
 			$json_file = '';
 			if ( $current_screen->post_type === 'offer' ) {
 				$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
@@ -3743,11 +3731,27 @@ The post is currently in draft status and requires admin review before publicati
 				
 				if ( is_array( $our_field_groups ) ) {
 					foreach ( $our_field_groups as $field_group ) {
-						$field_group['active'] = true;
-						$field_group['local'] = 'json';
-						
-						// Add our field group to the list
-						$field_groups[] = $field_group;
+						// Only add field groups that are specifically for this post type
+						if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
+							$should_add = false;
+							foreach ( $field_group['location'] as $location_group ) {
+								foreach ( $location_group as $rule ) {
+									if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' && 
+										 isset( $rule['value'] ) && $rule['value'] === $current_screen->post_type ) {
+										$should_add = true;
+										break 2;
+									}
+								}
+							}
+							
+							if ( $should_add ) {
+								$field_group['active'] = true;
+								$field_group['local'] = 'json';
+								
+								// Add our field group to the list
+								$field_groups[] = $field_group;
+							}
+						}
 					}
 				}
 			}

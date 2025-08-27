@@ -2,6 +2,29 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.36] - 2025-01-XX
+
+### 🚨 Critical ACF Field Overload Fix
+
+#### Fixed
+- **ACF Field Overload**: Fixed critical issue where ALL field groups were showing on business and offer post types
+- **Field Group Filtering**: Ensured field groups only appear on their intended post types
+- **Admin Interface**: Fixed multiple tabs showing all field groups instead of specific ones
+- **Post Type Specificity**: Business posts now only show business fields, offer posts only show offer fields
+- **Location Rule Compliance**: Field groups now respect their ACF location rules
+
+#### Improved
+- **Field Group Logic**: Added proper filtering based on ACF location rules
+- **Post Type Isolation**: Each post type now shows only its relevant field groups
+- **Performance**: Reduced unnecessary field group loading
+- **User Experience**: Cleaner admin interface with only relevant fields
+
+#### Technical Changes
+- Modified `force_offer_field_groups()` to filter by post type location rules
+- Removed overly aggressive field group loading
+- Added location rule checking to ensure proper field group assignment
+- Enhanced field group filtering logic
+
 ## [2.0.35] - 2025-01-XX
 
 ### 🚨 Critical ACF Fields Restoration Fix
