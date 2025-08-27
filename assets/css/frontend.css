@@ -224,6 +224,33 @@
     border-top: 1px solid #e5e5e5 !important;
 }
 
+/* Force blue styling for all form action buttons */
+.ndm-acf-form .acf-form-submit input[type="submit"],
+.ndm-acf-form .ndm-form-actions .button,
+.ndm-acf-form .ndm-form-actions .button-primary,
+.ndm-acf-form .ndm-form-actions .button-secondary {
+    background: #0073aa !important;
+    color: #fff !important;
+    border: 2px solid #0073aa !important;
+    padding: 12px 24px !important;
+    border-radius: 6px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+}
+
+.ndm-acf-form .acf-form-submit input[type="submit"]:hover,
+.ndm-acf-form .ndm-form-actions .button:hover,
+.ndm-acf-form .ndm-form-actions .button-primary:hover,
+.ndm-acf-form .ndm-form-actions .button-secondary:hover {
+    background: #005a87 !important;
+    border-color: #005a87 !important;
+    color: #fff !important;
+}
+
 /* ACF Tabs Styling */
 .ndm-acf-form .acf-tab-wrap {
     border: none !important;
@@ -352,7 +379,10 @@
 /* Style all ACF add buttons with red background */
 .ndm-acf-form .acf-button,
 .ndm-acf-form .acf-add-row,
-.ndm-acf-form .acf-add-social-media {
+.ndm-acf-form .acf-add-social-media,
+.ndm-acf-form a.acf-button,
+.ndm-acf-form .acf-repeater-add-row,
+.ndm-acf-form .acf-field-repeater .acf-button {
     background: #EB2127 !important;
     color: #fff !important;
     border: none !important;
@@ -363,11 +393,15 @@
     text-decoration: none !important;
     display: inline-block !important;
     transition: background 0.2s ease !important;
+    cursor: pointer !important;
 }
 
 .ndm-acf-form .acf-button:hover,
 .ndm-acf-form .acf-add-row:hover,
-.ndm-acf-form .acf-add-social-media:hover {
+.ndm-acf-form .acf-add-social-media:hover,
+.ndm-acf-form a.acf-button:hover,
+.ndm-acf-form .acf-repeater-add-row:hover,
+.ndm-acf-form .acf-field-repeater .acf-button:hover {
     background: #d41b21 !important;
     color: #fff !important;
 }
@@ -388,6 +422,30 @@
 }
 
 .ndm-acf-form .acf-repeater-add-row:hover {
+    background: #d41b21 !important;
+    color: #fff !important;
+}
+
+/* Force styling for any ACF add button */
+.ndm-acf-form a[href*="add"],
+.ndm-acf-form .acf-field-repeater a,
+.ndm-acf-form .acf-field-repeater .acf-button {
+    background: #EB2127 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    transition: background 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.ndm-acf-form a[href*="add"]:hover,
+.ndm-acf-form .acf-field-repeater a:hover,
+.ndm-acf-form .acf-field-repeater .acf-button:hover {
     background: #d41b21 !important;
     color: #fff !important;
 }

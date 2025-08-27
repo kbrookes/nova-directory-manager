@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.42] - 2025-01-XX
+
+### 🔧 CSS Specificity & Button Styling Fix
+
+#### Fixed
+- **CSS Specificity Issues**: Added stronger CSS selectors to override conflicting styles
+- **Button Styling**: Force blue background for all form action buttons
+- **Add Button Styling**: Enhanced CSS for "Add Social Media Account" and repeater buttons
+- **Style Conflicts**: Resolved conflicts with theme or other plugin styles
+
+#### Improved
+- **CSS Specificity**: Added multiple selectors to ensure styles are applied
+- **Button Consistency**: All form buttons now use proper blue/red styling
+- **Add Button Appearance**: Red background for all "add" buttons with proper styling
+- **Style Reliability**: More robust CSS that works across different themes
+
+#### Technical Changes
+- **Enhanced**: CSS selectors with higher specificity for button styling
+- **Added**: Force styling rules for form action buttons
+- **Improved**: CSS for repeater add buttons with multiple selectors
+- **Fixed**: Style conflicts that were preventing proper button appearance
+
 ## [2.0.41] - 2025-01-XX
 
 ### 🎨 Button Styling Consistency Fix
