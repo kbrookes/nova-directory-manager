@@ -317,9 +317,23 @@
     border-top: 1px solid #eee;
 }
 
-/* Hide ACF submit button since we have our own */
+/* Style ACF submit button to match our design */
 .ndm-acf-form .acf-form-submit input[type="submit"] {
-    display: none !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    border-radius: 6px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-right: 15px !important;
+}
+
+.ndm-acf-form .acf-form-submit input[type="submit"]:hover {
+    background: #005a87 !important;
+    color: #fff !important;
 }
 
 /* Style all ACF add buttons with red background */
@@ -341,6 +355,26 @@
 .ndm-acf-form .acf-button:hover,
 .ndm-acf-form .acf-add-row:hover,
 .ndm-acf-form .acf-add-social-media:hover {
+    background: #d41b21 !important;
+    color: #fff !important;
+}
+
+/* Specific styling for repeater add row buttons */
+.ndm-acf-form .acf-repeater-add-row {
+    background: #EB2127 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    transition: background 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.ndm-acf-form .acf-repeater-add-row:hover {
     background: #d41b21 !important;
     color: #fff !important;
 }

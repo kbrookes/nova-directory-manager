@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.40] - 2025-01-XX
+
+### 🔧 Button Functionality & Styling Fixes
+
+#### Fixed
+- **Non-Functional Button**: Removed button outside form that wasn't working
+- **ACF Submit Button**: Restored and properly styled the ACF submit button
+- **Repeater Add Buttons**: Fixed styling for `.acf-repeater-add-row` buttons
+- **Form Structure**: Moved "Back to Dashboard" link inside the working form
+
+#### Improved
+- **Button Functionality**: All buttons now work correctly within the form
+- **Visual Consistency**: ACF submit button matches the blue styling
+- **Button Styling**: Repeater add buttons use red background (#EB2127)
+- **Form Layout**: Proper form structure with all elements inside the form
+
+#### Technical Changes
+- **Restored**: ACF submit button with proper styling
+- **Enhanced**: CSS for repeater add row buttons with red background
+- **Fixed**: Form structure to include all buttons within the form
+- **Updated**: Button styling to match design system
+
 ## [2.0.39] - 2025-01-XX
 
 ### 🎨 Frontend Form Styling Improvements

@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.39
+ * Version: 2.0.40
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.39' );
+define( 'NDM_VERSION', '2.0.40' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -2176,21 +2176,16 @@ class Nova_Directory_Manager {
 							'class' => 'ndm-acf-form'
 						),
 						'html_before_fields' => '<div class="ndm-form-notices"></div>',
-						'html_after_fields' => '<div class="ndm-form-actions"></div>',
-						'submit_value' => '', // Hide the ACF submit button
+						'html_after_fields' => '<div class="ndm-form-actions">
+							<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary">
+								' . __( 'Back to Dashboard', 'nova-directory-manager' ) . '
+							</a>
+						</div>',
+						'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
 						'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
 						'return' => add_query_arg( 'updated', '1', get_permalink() ),
 					) );
 					?>
-				</div>
-
-				<div class="ndm-form-actions">
-					<button type="submit" class="button button-primary">
-						<?php _e( 'Update Business', 'nova-directory-manager' ); ?>
-					</button>
-					<a href="<?php echo esc_url( home_url( '/membership/member-dashboard/' ) ); ?>" class="button button-secondary">
-						<?php _e( 'Back to Dashboard', 'nova-directory-manager' ); ?>
-					</a>
 				</div>
 			</form>
 		</div>
