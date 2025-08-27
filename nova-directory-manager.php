@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.42
+ * Version: 2.0.43
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.42' );
+define( 'NDM_VERSION', '2.0.43' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -2177,7 +2177,7 @@ class Nova_Directory_Manager {
 						),
 						'html_before_fields' => '<div class="ndm-form-notices"></div>',
 						'html_after_fields' => '<div class="ndm-form-actions">
-							<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary">
+							<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary" style="background: #0073aa !important; color: #fff !important; border: 2px solid #0073aa !important; padding: 12px 24px !important; border-radius: 6px !important; font-size: 16px !important; font-weight: 600 !important; text-decoration: none !important; display: inline-block !important; margin-right: 15px !important;">
 								' . __( 'Back to Dashboard', 'nova-directory-manager' ) . '
 							</a>
 						</div>',
