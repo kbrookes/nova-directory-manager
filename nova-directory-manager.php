@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.36
+ * Version: 2.0.37
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.36' );
+define( 'NDM_VERSION', '2.0.37' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -140,11 +140,8 @@ class Nova_Directory_Manager {
 		// Only check ACF fields on plugin activation, not every page load
 		// add_action( 'acf/init', array( $this, 'ensure_offer_acf_fields' ) );
 		
-		// Hook into ACF field group loading to ensure our fields are included
-		add_filter( 'acf/load_field_groups', array( $this, 'force_offer_field_groups' ) );
-		
-		// Force ACF to reload field groups on offer post screens (only when needed)
-		add_action( 'admin_head', array( $this, 'force_acf_reload_on_offer_screens' ), 999 );
+		// Register ACF field groups on init to ensure they're available
+		add_action( 'acf/init', array( $this, 'register_offer_acf_fields' ) );
 
 		// Register the Advertiser Type taxonomy for offers
 		add_action('init', function() {
@@ -2485,7 +2482,7 @@ class Nova_Directory_Manager {
 	/**
 	 * Register ACF field groups for offers and businesses.
 	 */
-	private function register_offer_acf_fields() {
+	public function register_offer_acf_fields() {
 		// Prevent multiple executions
 		static $registered = false;
 		if ( $registered ) {
@@ -2497,8 +2494,7 @@ class Nova_Directory_Manager {
 			return;
 		}
 
-		// Always register field groups for plugin functionality
-		// The auto registration setting only controls database saves, not ACF registration
+		// Register field groups from JSON files
 		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-17.json', 'offer' );
 		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-08.json', 'business' );
 	}
@@ -3095,20 +3091,6 @@ class Nova_Directory_Manager {
 	 * @param string $post_type
 	 */
 	private function register_field_groups_from_json( $json_file_path, $post_type ) {
-		// Memory monitoring
-		if ( function_exists( 'ndm_memory_usage' ) ) {
-			ndm_memory_usage();
-		}
-		
-		// Check if automatic field group registration is disabled
-		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
-		if ( $disable_auto_registration ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'NDM: Automatic field group registration is disabled' );
-			}
-			return;
-		}
-		
 		// Prevent multiple executions for the same file
 		static $processed_files = array();
 		$file_key = $json_file_path . '_' . $post_type;
@@ -3116,101 +3098,64 @@ class Nova_Directory_Manager {
 			return;
 		}
 		$processed_files[] = $file_key;
+		
 		$json_file = NDM_PLUGIN_DIR . $json_file_path;
-		if ( file_exists( $json_file ) ) {
-			// Check file size to prevent memory issues (max 100KB)
-			$file_size = filesize( $json_file );
-			if ( $file_size > 100 * 1024 ) {
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'NDM: JSON file too large (' . $file_size . ' bytes), skipping: ' . $json_file );
-				}
-				return;
-			}
-			
-			$json_content = file_get_contents( $json_file );
-			if ( $json_content === false ) {
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'NDM: Failed to read JSON file: ' . $json_file );
-				}
-				return;
-			}
-			
-			$field_groups = json_decode( $json_content, true );
-			
-			if ( json_last_error() !== JSON_ERROR_NONE ) {
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'NDM: JSON decode error: ' . json_last_error_msg() . ' in file: ' . $json_file );
-				}
-				return;
-			}
-			
-			if ( is_array( $field_groups ) ) {
-				foreach ( $field_groups as &$field_group ) {
-					// Ensure the field group is always active for our plugin
-					$field_group['active'] = true;
-					$field_group['local'] = 'json';
-					$field_group['modified'] = time();
-					
-					// Check if this field group already exists in the database
-					$exists_in_db = $this->field_group_exists_in_database( $field_group['key'] );
-					if ( $exists_in_db ) {
-						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-							error_log( 'NDM: Field group exists in database, registering with ACF only: ' . $field_group['key'] );
-						}
-						// Still register with ACF but don't save to database again
-						acf_remove_local_field_group( $field_group['key'] );
-						acf_add_local_field_group( $field_group );
-						continue;
-					}
-					// Ensure the location rule is correct for the specified post type
-					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
-						foreach ( $field_group['location'] as &$location_group ) {
-							foreach ( $location_group as &$rule ) {
-								if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' ) {
-									$rule['value'] = $post_type;
-								}
-							}
-						}
-					}
-					// --- Inject category selector for offers ---
-					if ($post_type === 'offer') {
-						$category_field = array(
-							'key' => 'field_ndm_offer_category',
-							'label' => 'Categories',
-							'name' => 'ndm_offer_category',
-							'type' => 'taxonomy',
-							'taxonomy' => 'category',
-							'field_type' => 'multi_select',
-							'add_term' => 0,
-							'save_terms' => 1,
-							'load_terms' => 1,
-							'return_format' => 'id',
-							'multiple' => 1,
-							'required' => 1,
-							'instructions' => 'Select one or more categories for this offer.',
-							'wrapper' => array('width' => '', 'class' => '', 'id' => ''),
-						);
-						// Insert after the business field (first field)
-						array_splice($field_group['fields'], 1, 0, array($category_field));
-					}
-					// --- End inject ---
-					acf_remove_local_field_group( $field_group['key'] );
-					acf_add_local_field_group( $field_group );
-					$this->save_field_group_to_database( $field_group );
-					
-					// Memory cleanup after each field group
-					unset( $field_group );
-				}
-			}
-		} else {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'NDM: ACF JSON file not found: ' . $json_file );
-			}
+		if ( ! file_exists( $json_file ) ) {
+			return;
 		}
 		
-		// Memory cleanup
-		unset( $json_content, $field_groups );
-		wp_cache_flush();
+		$json_content = file_get_contents( $json_file );
+		if ( $json_content === false ) {
+			return;
+		}
+		
+		$field_groups = json_decode( $json_content, true );
+		if ( ! is_array( $field_groups ) ) {
+			return;
+		}
+		
+		foreach ( $field_groups as $field_group ) {
+			// Ensure the field group is active and properly configured
+			$field_group['active'] = true;
+			$field_group['local'] = 'json';
+			
+			// Ensure the location rule is correct for the specified post type
+			if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
+				foreach ( $field_group['location'] as &$location_group ) {
+					foreach ( $location_group as &$rule ) {
+						if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' ) {
+							$rule['value'] = $post_type;
+						}
+					}
+				}
+			}
+			
+			// Add category selector for offers
+			if ( $post_type === 'offer' && isset( $field_group['fields'] ) ) {
+				$category_field = array(
+					'key' => 'field_ndm_offer_category',
+					'label' => 'Categories',
+					'name' => 'ndm_offer_category',
+					'type' => 'taxonomy',
+					'taxonomy' => 'category',
+					'field_type' => 'multi_select',
+					'add_term' => 0,
+					'save_terms' => 1,
+					'load_terms' => 1,
+					'return_format' => 'id',
+					'multiple' => 1,
+					'required' => 1,
+					'instructions' => 'Select one or more categories for this offer.',
+					'wrapper' => array('width' => '', 'class' => '', 'id' => ''),
+				);
+				// Insert after the business field (first field)
+				array_splice( $field_group['fields'], 1, 0, array( $category_field ) );
+			}
+			
+			// Register the field group with ACF
+			acf_remove_local_field_group( $field_group['key'] );
+			acf_add_local_field_group( $field_group );
+		}
 	}
 
 	/**
@@ -3672,93 +3617,7 @@ The post is currently in draft status and requires admin review before publicati
 		}
 	}
 
-	/**
-	 * Force ACF to reload field groups on offer and business post screens.
-	 */
-	public function force_acf_reload_on_offer_screens() {
-		$current_screen = get_current_screen();
-		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
-			// Only register fields once per screen load to prevent duplicates
-			static $registered = false;
-			if ( ! $registered ) {
-				$this->register_offer_acf_fields();
-				$registered = true;
-			}
-			
-			// Only clear cache and reload if we're on the edit screen
-			if ( in_array( $current_screen->base, array( 'post', 'post-new' ) ) ) {
-				// Clear ACF cache
-				if ( function_exists( 'acf_get_cache' ) ) {
-					$cache = acf_get_cache( 'acf_get_field_groups' );
-					if ( $cache ) {
-						$cache->flush();
-					}
-				}
-				
-				// Force ACF to reload field groups
-				if ( function_exists( 'acf_get_field_groups' ) ) {
-					acf_get_field_groups();
-				}
-				
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'NDM: Forced ACF reload on ' . $current_screen->post_type . ' screen: ' . $current_screen->id );
-				}
-			}
-		}
-	}
 
-	/**
-	 * Force field groups to be included when ACF loads field groups.
-	 *
-	 * @param array $field_groups
-	 * @return array
-	 */
-	public function force_offer_field_groups( $field_groups ) {
-		// Check if we're on an offer or business post type
-		$current_screen = get_current_screen();
-		if ( $current_screen && in_array( $current_screen->post_type, array( 'offer', 'business' ) ) ) {
-			// Get the appropriate field group from our JSON based on current post type
-			$json_file = '';
-			if ( $current_screen->post_type === 'offer' ) {
-				$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-17.json';
-			} elseif ( $current_screen->post_type === 'business' ) {
-				$json_file = NDM_PLUGIN_DIR . 'docs/acf-export-2025-07-08.json';
-			}
-			
-			if ( file_exists( $json_file ) ) {
-				$json_content = file_get_contents( $json_file );
-				$our_field_groups = json_decode( $json_content, true );
-				
-				if ( is_array( $our_field_groups ) ) {
-					foreach ( $our_field_groups as $field_group ) {
-						// Only add field groups that are specifically for this post type
-						if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
-							$should_add = false;
-							foreach ( $field_group['location'] as $location_group ) {
-								foreach ( $location_group as $rule ) {
-									if ( isset( $rule['param'] ) && $rule['param'] === 'post_type' && 
-										 isset( $rule['value'] ) && $rule['value'] === $current_screen->post_type ) {
-										$should_add = true;
-										break 2;
-									}
-								}
-							}
-							
-							if ( $should_add ) {
-								$field_group['active'] = true;
-								$field_group['local'] = 'json';
-								
-								// Add our field group to the list
-								$field_groups[] = $field_group;
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		return $field_groups;
-	}
 
 	/**
 	 * Ensure offer has the correct author assigned.

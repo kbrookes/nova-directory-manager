@@ -2,6 +2,30 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.37] - 2025-01-XX
+
+### 🔧 Major ACF Field Group Simplification
+
+#### Fixed
+- **ACF Field Group Conflicts**: Completely simplified field group registration to eliminate all conflicts
+- **Field Group Overload**: Removed complex hooks that were causing field groups to appear everywhere
+- **Registration Conflicts**: Eliminated multiple registration attempts that were causing issues
+- **Hook Interference**: Removed problematic filters and reload functions
+- **Database Conflicts**: Simplified registration to avoid database interference
+
+#### Improved
+- **Code Simplicity**: Drastically simplified field group registration logic
+- **Reliability**: Single registration point using `acf/init` hook
+- **Performance**: Removed complex database checking and memory management
+- **Maintainability**: Much cleaner and easier to maintain code
+
+#### Technical Changes
+- **Removed**: `force_offer_field_groups()` and `force_acf_reload_on_offer_screens()` functions
+- **Simplified**: `register_field_groups_from_json()` function
+- **Added**: Simple `acf/init` hook for registration
+- **Removed**: Complex database saving and checking logic
+- **Enhanced**: Direct ACF registration without interference
+
 ## [2.0.36] - 2025-01-XX
 
 ### 🚨 Critical ACF Field Overload Fix
