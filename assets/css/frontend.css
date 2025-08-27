@@ -187,12 +187,13 @@
     text-decoration: none;
     display: inline-block;
     transition: all 0.2s ease;
+    border: 2px solid;
 }
 
 .ndm-form-actions .button-primary {
     background: #0073aa;
     color: #fff;
-    border: 2px solid #0073aa;
+    border-color: #0073aa;
 }
 
 .ndm-form-actions .button-primary:hover {
@@ -202,14 +203,25 @@
 }
 
 .ndm-form-actions .button-secondary {
-    background: #fff;
-    color: #0073aa;
-    border: 2px solid #0073aa;
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
 }
 
 .ndm-form-actions .button-secondary:hover {
-    background: #0073aa;
+    background: #005a87;
+    border-color: #005a87;
     color: #fff;
+}
+
+/* Ensure proper alignment of form actions */
+.ndm-acf-form .acf-form-submit {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-top: 20px !important;
+    padding-top: 20px !important;
+    border-top: 1px solid #e5e5e5 !important;
 }
 
 /* ACF Tabs Styling */
@@ -321,7 +333,7 @@
 .ndm-acf-form .acf-form-submit input[type="submit"] {
     background: #0073aa !important;
     color: #fff !important;
-    border: none !important;
+    border: 2px solid #0073aa !important;
     padding: 12px 24px !important;
     border-radius: 6px !important;
     font-size: 16px !important;
@@ -333,6 +345,7 @@
 
 .ndm-acf-form .acf-form-submit input[type="submit"]:hover {
     background: #005a87 !important;
+    border-color: #005a87 !important;
     color: #fff !important;
 }
 
