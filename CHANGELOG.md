@@ -2,6 +2,30 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.38] - 2025-01-XX
+
+### ✨ Business Category Management in Frontend Editor
+
+#### Added
+- **Category Selection Interface**: Business owners can now update their business categories in the frontend editor
+- **Checkbox Grid Layout**: Categories displayed in a responsive grid with intuitive checkboxes
+- **Current Category Display**: Shows which categories are currently assigned to the business
+- **Form Processing**: Handles category updates when the form is submitted
+- **Security Features**: Proper nonce verification and user permission checks
+
+#### Improved
+- **User Experience**: Complete category management without needing admin access
+- **Form Organization**: Clear separation between categories and business details
+- **Visual Design**: Professional styling with hover effects and responsive layout
+- **Business Control**: Business owners have full control over their categorization
+
+#### Technical Changes
+- **Enhanced**: `business_edit_form_shortcode()` to include category selection
+- **Added**: `handle_business_form_submission()` function for form processing
+- **Added**: `wp_loaded` hook for form submission handling
+- **Enhanced**: Frontend CSS with category selection styling
+- **Added**: Form sections and improved button styling
+
 ## [2.0.37] - 2025-01-XX
 
 ### 🔧 Major ACF Field Group Simplification

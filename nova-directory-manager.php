@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.37
+ * Version: 2.0.38
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.37' );
+define( 'NDM_VERSION', '2.0.38' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -125,6 +125,9 @@ class Nova_Directory_Manager {
 		
 		// ACF form processing
 		add_action( 'acf/save_post', array( $this, 'handle_acf_form_save' ), 10, 1 );
+		
+		// Business form processing (including categories)
+		add_action( 'wp_loaded', array( $this, 'handle_business_form_submission' ) );
 		
 		// Auto-update post title from business name field
 		add_action( 'acf/save_post', array( $this, 'update_post_title_from_business_name' ), 20, 1 );
@@ -2118,31 +2121,78 @@ class Nova_Directory_Manager {
 		$post = get_post( $post_id );
 		setup_postdata( $post );
 
+		// Get current categories
+		$current_categories = wp_get_post_terms( $post_id, 'category', array( 'fields' => 'ids' ) );
+		
+		// Get all available categories
+		$categories = get_terms( array(
+			'taxonomy' => 'category',
+			'hide_empty' => false,
+			'orderby' => 'name',
+			'order' => 'ASC'
+		) );
+
 		// Output the form
 		?>
 		<div class="ndm-business-edit-form">
-			<?php
-			acf_form( array(
-				'post_id' => $post_id,
-				'post_title' => false, // Hide the title field
-				'post_content' => false, // We don't use post content, only ACF fields
-				'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
-				'form_attributes' => array(
-					'class' => 'ndm-acf-form'
-				),
-				'html_before_fields' => '<div class="ndm-form-notices"></div>',
-				'html_after_fields' => '<div class="ndm-form-actions"></div>',
-				'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
-				'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
-				'return' => add_query_arg( 'updated', '1', get_permalink() ),
-			) );
-			?>
+			<form method="post" action="" class="ndm-business-form">
+				<?php wp_nonce_field( 'ndm_business_edit', 'ndm_business_nonce' ); ?>
+				<input type="hidden" name="business_id" value="<?php echo esc_attr( $post_id ); ?>" />
+				
+				<!-- Business Categories Section -->
+				<div class="ndm-form-section">
+					<h3><?php _e( 'Business Categories', 'nova-directory-manager' ); ?></h3>
+					<p class="description"><?php _e( 'Select the categories that best describe your business.', 'nova-directory-manager' ); ?></p>
+					
+					<div class="ndm-categories-wrapper">
+						<?php if ( ! empty( $categories ) ) : ?>
+							<div class="ndm-categories-grid">
+								<?php foreach ( $categories as $category ) : ?>
+									<label class="ndm-category-checkbox">
+										<input type="checkbox" 
+											   name="business_categories[]" 
+											   value="<?php echo esc_attr( $category->term_id ); ?>"
+											   <?php checked( in_array( $category->term_id, $current_categories ) ); ?> />
+										<span class="category-name"><?php echo esc_html( $category->name ); ?></span>
+									</label>
+								<?php endforeach; ?>
+							</div>
+						<?php else : ?>
+							<p><?php _e( 'No categories available.', 'nova-directory-manager' ); ?></p>
+						<?php endif; ?>
+					</div>
+				</div>
 
-			<div class="ndm-form-actions">
-				<a href="<?php echo esc_url( home_url( '/membership/member-dashboard/' ) ); ?>" class="button button-secondary">
-					<?php _e( 'Back to Dashboard', 'nova-directory-manager' ); ?>
-				</a>
-			</div>
+				<!-- ACF Fields Section -->
+				<div class="ndm-form-section">
+					<h3><?php _e( 'Business Details', 'nova-directory-manager' ); ?></h3>
+					<?php
+					acf_form( array(
+						'post_id' => $post_id,
+						'post_title' => false, // Hide the title field
+						'post_content' => false, // We don't use post content, only ACF fields
+						'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
+						'form_attributes' => array(
+							'class' => 'ndm-acf-form'
+						),
+						'html_before_fields' => '<div class="ndm-form-notices"></div>',
+						'html_after_fields' => '<div class="ndm-form-actions"></div>',
+						'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
+						'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
+						'return' => add_query_arg( 'updated', '1', get_permalink() ),
+					) );
+					?>
+				</div>
+
+				<div class="ndm-form-actions">
+					<button type="submit" class="button button-primary">
+						<?php _e( 'Update Business', 'nova-directory-manager' ); ?>
+					</button>
+					<a href="<?php echo esc_url( home_url( '/membership/member-dashboard/' ) ); ?>" class="button button-secondary">
+						<?php _e( 'Back to Dashboard', 'nova-directory-manager' ); ?>
+					</a>
+				</div>
+			</form>
 		</div>
 		<?php
 
@@ -2296,6 +2346,52 @@ class Nova_Directory_Manager {
 			'message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
 			'redirect_url' => add_query_arg( 'updated', '1', get_permalink( $post_id ) )
 		) );
+	}
+
+	/**
+	 * Handle business form submission (including categories).
+	 */
+	public function handle_business_form_submission() {
+		// Check if this is a business form submission
+		if ( ! isset( $_POST['ndm_business_nonce'] ) || ! wp_verify_nonce( $_POST['ndm_business_nonce'], 'ndm_business_edit' ) ) {
+			return;
+		}
+
+		// Check if user is logged in and has business_owner role
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		$current_user = wp_get_current_user();
+		if ( ! in_array( 'business_owner', $current_user->roles ) ) {
+			return;
+		}
+
+		// Get the business ID
+		$business_id = intval( $_POST['business_id'] ?? 0 );
+		if ( ! $business_id ) {
+			return;
+		}
+
+		// Verify user owns this business
+		$post = get_post( $business_id );
+		if ( ! $post || $post->post_type !== 'business' || $post->post_author != $current_user->ID ) {
+			return;
+		}
+
+		// Handle category updates
+		if ( isset( $_POST['business_categories'] ) ) {
+			$categories = array_map( 'intval', $_POST['business_categories'] );
+			wp_set_post_terms( $business_id, $categories, 'category', false );
+		} else {
+			// If no categories selected, remove all categories
+			wp_set_post_terms( $business_id, array(), 'category', false );
+		}
+
+		// Redirect with success message
+		$redirect_url = add_query_arg( 'updated', '1', get_permalink() );
+		wp_redirect( $redirect_url );
+		exit;
 	}
 
 	/**
