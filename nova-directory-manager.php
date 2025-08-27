@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.34
+ * Version: 2.0.35
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.34' );
+define( 'NDM_VERSION', '2.0.35' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -422,7 +422,7 @@ class Nova_Directory_Manager {
 
 						<div class="ndm-admin-box">
 							<h3><?php _e( 'ACF Field Registration Control', 'nova-directory-manager' ); ?></h3>
-							<p><?php _e( 'Control automatic ACF field group registration to prevent conflicts with manual field group creation.', 'nova-directory-manager' ); ?></p>
+							<p><?php _e( 'Control automatic ACF field group database saves to prevent conflicts with manual field group creation.', 'nova-directory-manager' ); ?></p>
 							<?php
 							$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
 							?>
@@ -431,16 +431,17 @@ class Nova_Directory_Manager {
 								<input type="hidden" name="action" value="toggle_auto_registration" />
 								<label>
 									<input type="checkbox" name="disable_auto_registration" value="1" <?php checked( $disable_auto_registration ); ?> />
-									<?php _e( 'Disable automatic field group registration', 'nova-directory-manager' ); ?>
+									<?php _e( 'Disable automatic field group database saves', 'nova-directory-manager' ); ?>
 								</label>
 								<br><br>
 								<?php submit_button( __( 'Update Registration Settings', 'nova-directory-manager' ), 'secondary', 'update_registration_settings' ); ?>
 							</form>
 							<?php if ( $disable_auto_registration ) : ?>
-								<p><em><?php _e( 'Note: Automatic registration is disabled. You can manually create field groups without interference.', 'nova-directory-manager' ); ?></em></p>
+								<p><em><?php _e( 'Note: Automatic database saves are disabled. Plugin field groups will still work, but won\'t be saved to the database automatically.', 'nova-directory-manager' ); ?></em></p>
 							<?php else : ?>
-								<p><em><?php _e( 'Note: Automatic registration is enabled. This may interfere with manual field group creation.', 'nova-directory-manager' ); ?></em></p>
+								<p><em><?php _e( 'Note: Automatic database saves are enabled. This may interfere with manual field group creation.', 'nova-directory-manager' ); ?></em></p>
 							<?php endif; ?>
+							<p><strong><?php _e( 'Important:', 'nova-directory-manager' ); ?></strong> <?php _e( 'Plugin field groups will always be available for use, regardless of this setting.', 'nova-directory-manager' ); ?></p>
 						</div>
 
 						<div class="ndm-admin-box">
@@ -2496,10 +2497,9 @@ class Nova_Directory_Manager {
 			return;
 		}
 
-		// Register offers field groups
+		// Always register field groups for plugin functionality
+		// The auto registration setting only controls database saves, not ACF registration
 		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-17.json', 'offer' );
-		
-		// Register business field groups
 		$this->register_field_groups_from_json( 'docs/acf-export-2025-07-08.json', 'business' );
 	}
 
@@ -3146,18 +3146,22 @@ class Nova_Directory_Manager {
 			
 			if ( is_array( $field_groups ) ) {
 				foreach ( $field_groups as &$field_group ) {
-					// Check if this field group already exists in the database
-					if ( $this->field_group_exists_in_database( $field_group['key'] ) ) {
-						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-							error_log( 'NDM: Field group already exists in database, skipping: ' . $field_group['key'] );
-						}
-						continue;
-					}
-					
 					// Ensure the field group is always active for our plugin
 					$field_group['active'] = true;
 					$field_group['local'] = 'json';
 					$field_group['modified'] = time();
+					
+					// Check if this field group already exists in the database
+					$exists_in_db = $this->field_group_exists_in_database( $field_group['key'] );
+					if ( $exists_in_db ) {
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'NDM: Field group exists in database, registering with ACF only: ' . $field_group['key'] );
+						}
+						// Still register with ACF but don't save to database again
+						acf_remove_local_field_group( $field_group['key'] );
+						acf_add_local_field_group( $field_group );
+						continue;
+					}
 					// Ensure the location rule is correct for the specified post type
 					if ( isset( $field_group['location'] ) && is_array( $field_group['location'] ) ) {
 						foreach ( $field_group['location'] as &$location_group ) {
@@ -3716,11 +3720,8 @@ The post is currently in draft status and requires admin review before publicati
 	 * @return array
 	 */
 	public function force_offer_field_groups( $field_groups ) {
-		// Check if automatic field group registration is disabled
-		$disable_auto_registration = get_option( 'ndm_disable_auto_field_registration', false );
-		if ( $disable_auto_registration ) {
-			return $field_groups;
-		}
+		// Always ensure our field groups are included, regardless of auto registration setting
+		// This is critical for the plugin to function properly
 		
 		// Check if we're on an offer or business post type
 		$current_screen = get_current_screen();

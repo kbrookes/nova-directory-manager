@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.35] - 2025-01-XX
+
+### 🚨 Critical ACF Fields Restoration Fix
+
+#### Fixed
+- **ACF Fields Disappeared**: Fixed critical issue where ACF fields disappeared from business and offer post types
+- **Field Group Registration**: Ensured plugin field groups are always registered with ACF for functionality
+- **Admin Interface**: Fixed field groups not appearing in WordPress admin
+- **Frontend Forms**: Restored ACF fields in frontend forms and editors
+- **Plugin Functionality**: Ensured core plugin functionality remains intact
+
+#### Improved
+- **Field Group Logic**: Modified registration logic to always register with ACF, even if field groups exist in database
+- **Admin Interface Clarity**: Updated admin interface to clarify that setting only controls database saves
+- **Error Prevention**: Added safeguards to prevent field groups from disappearing in future updates
+
+#### Technical Changes
+- Modified `register_field_groups_from_json()` to always register with ACF
+- Updated `force_offer_field_groups()` to always include field groups
+- Enhanced `register_offer_acf_fields()` to ensure plugin functionality
+- Added emergency restore script for immediate field recovery
+
 ## [2.0.34] - 2025-01-XX
 
 ### 🔧 ACF Field Group Creation Fix
