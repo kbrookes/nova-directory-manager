@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.43
+ * Version: 2.0.44
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.43' );
+define( 'NDM_VERSION', '2.0.44' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -128,6 +128,8 @@ class Nova_Directory_Manager {
 		
 		// Business form processing (including categories)
 		add_action( 'wp_loaded', array( $this, 'handle_business_form_submission' ) );
+		add_filter( 'acf/pre_load_post', array( $this, 'restrict_business_access' ), 10, 2 );
+		add_filter( 'map_meta_cap', array( $this, 'restrict_business_capabilities' ), 10, 4 );
 		
 		// Auto-update post title from business name field
 		add_action( 'acf/save_post', array( $this, 'update_post_title_from_business_name' ), 20, 1 );
@@ -2167,24 +2169,30 @@ class Nova_Directory_Manager {
 				<div class="ndm-form-section">
 					<h3><?php _e( 'Business Details', 'nova-directory-manager' ); ?></h3>
 					<?php
-					acf_form( array(
-						'post_id' => $post_id,
-						'post_title' => false, // Hide the title field
-						'post_content' => false, // We don't use post content, only ACF fields
-						'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
-						'form_attributes' => array(
-							'class' => 'ndm-acf-form'
-						),
-						'html_before_fields' => '<div class="ndm-form-notices"></div>',
-						'html_after_fields' => '<div class="ndm-form-actions">
-							<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary" style="background: #0073aa !important; color: #fff !important; border: 2px solid #0073aa !important; padding: 12px 24px !important; border-radius: 6px !important; font-size: 16px !important; font-weight: 600 !important; text-decoration: none !important; display: inline-block !important; margin-right: 15px !important;">
-								' . __( 'Back to Dashboard', 'nova-directory-manager' ) . '
-							</a>
-						</div>',
-						'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
-						'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
-						'return' => add_query_arg( 'updated', '1', get_permalink() ),
-					) );
+					// Double-check security before rendering ACF form
+					$post = get_post( $post_id );
+					if ( ! $post || $post->post_type !== 'business' || $post->post_author != $current_user->ID ) {
+						echo '<p>' . __( 'Business not found or you do not have permission to edit it.', 'nova-directory-manager' ) . '</p>';
+					} else {
+						acf_form( array(
+							'post_id' => $post_id,
+							'post_title' => false, // Hide the title field
+							'post_content' => false, // We don't use post content, only ACF fields
+							'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
+							'form_attributes' => array(
+								'class' => 'ndm-acf-form'
+							),
+							'html_before_fields' => '<div class="ndm-form-notices"></div>',
+							'html_after_fields' => '<div class="ndm-form-actions">
+								<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary" style="background: #0073aa !important; color: #fff !important; border: 2px solid #0073aa !important; padding: 12px 24px !important; border-radius: 6px !important; font-size: 16px !important; font-weight: 600 !important; text-decoration: none !important; display: inline-block !important; margin-right: 15px !important;">
+									' . __( 'Back to Dashboard', 'nova-directory-manager' ) . '
+								</a>
+							</div>',
+							'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
+							'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
+							'return' => add_query_arg( 'updated', '1', get_permalink() ),
+						) );
+					}
 					?>
 				</div>
 			</form>
@@ -2387,6 +2395,80 @@ class Nova_Directory_Manager {
 		$redirect_url = add_query_arg( 'updated', '1', get_permalink() );
 		wp_redirect( $redirect_url );
 		exit;
+	}
+
+	/**
+	 * Restrict business access to owners only.
+	 *
+	 * @param mixed $post The post object or false.
+	 * @param mixed $post_id The post ID.
+	 * @return mixed The post object or false if access denied.
+	 */
+	public function restrict_business_access( $post, $post_id ) {
+		// Only apply to business post types
+		if ( get_post_type( $post_id ) !== 'business' ) {
+			return $post;
+		}
+
+		// Allow admin users full access
+		if ( current_user_can( 'manage_options' ) ) {
+			return $post;
+		}
+
+		// Check if user is logged in and has business_owner role
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		$current_user = wp_get_current_user();
+		if ( ! in_array( 'business_owner', $current_user->roles ) ) {
+			return false;
+		}
+
+		// Verify user owns this business
+		$business_post = get_post( $post_id );
+		if ( ! $business_post || $business_post->post_author != $current_user->ID ) {
+			return false;
+		}
+
+		return $post;
+	}
+
+	/**
+	 * Restrict business capabilities to owners only.
+	 *
+	 * @param array  $caps    The user's actual capabilities.
+	 * @param string $cap     Capability name.
+	 * @param int    $user_id The user ID.
+	 * @param array  $args    Adds the context to the cap. Typically the object ID.
+	 * @return array The user's capabilities.
+	 */
+	public function restrict_business_capabilities( $caps, $cap, $user_id, $args ) {
+		// Only apply to business post types
+		if ( ! isset( $args[0] ) || get_post_type( $args[0] ) !== 'business' ) {
+			return $caps;
+		}
+
+		$post_id = $args[0];
+		$user = get_user_by( 'id', $user_id );
+
+		// Allow admin users full access
+		if ( $user && $user->has_cap( 'manage_options' ) ) {
+			return $caps;
+		}
+
+		// Check if user has business_owner role
+		if ( ! $user || ! in_array( 'business_owner', $user->roles ) ) {
+			return array( 'do_not_allow' );
+		}
+
+		// Verify user owns this business
+		$post = get_post( $post_id );
+		if ( ! $post || $post->post_author != $user_id ) {
+			return array( 'do_not_allow' );
+		}
+
+		return $caps;
 	}
 
 	/**

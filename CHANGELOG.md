@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.44] - 2025-01-XX
+
+### 🔒 Critical Security Fix - Business Access Control
+
+#### Fixed
+- **Security Vulnerability**: Business owners could edit any business, not just their own
+- **Access Control**: Added multiple layers of security to restrict business access
+- **ACF Form Security**: Prevented unauthorized access to business posts via ACF
+- **Capability Restrictions**: Added WordPress capability restrictions for business posts
+
+#### Improved
+- **Multi-Layer Security**: Multiple security checks prevent unauthorized access
+- **ACF Integration**: Added filters to restrict ACF form access to business owners only
+- **Capability System**: Integrated with WordPress capability system for proper access control
+- **Admin Protection**: Maintained admin access while restricting business owner access
+
+#### Technical Changes
+- **Added**: `restrict_business_access()` function to control ACF post access
+- **Added**: `restrict_business_capabilities()` function for WordPress capability control
+- **Enhanced**: Business edit form with additional security checks
+- **Added**: ACF pre-load filter to prevent unauthorized post access
+
 ## [2.0.43] - 2025-01-XX
 
 ### 🔧 Nuclear CSS Fix & Button Order Correction
