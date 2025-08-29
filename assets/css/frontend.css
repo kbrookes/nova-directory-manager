@@ -9,6 +9,19 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Ensure proper form structure */
+.ndm-business-edit-form .acf-form {
+    background: transparent;
+}
+
+.ndm-business-edit-form .acf-fields {
+    background: transparent;
+}
+
+.ndm-business-edit-form .acf-field {
+    background: transparent;
+}
+
 .ndm-business-edit-form h2 {
     color: #333;
     margin-bottom: 30px;

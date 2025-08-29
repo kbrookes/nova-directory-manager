@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.48] - 2025-01-XX
+
+### 🔧 Fatal Error Fix and Form Cleanup
+
+#### Fixed
+- **Fatal Error on Save**: Fixed undefined function `acf_get_cache()` causing fatal error
+- **Extra Button Issue**: Removed custom submit button configuration causing duplicate buttons
+- **Form Structure Issues**: Improved form structure and CSS for better rendering
+- **Cache Function Error**: Added function existence check for ACF cache functions
+
+#### Improved
+- **Error Handling**: Better error handling for ACF cache functions
+- **Form Structure**: Cleaner form structure without duplicate elements
+- **CSS Structure**: Added CSS rules to ensure proper form background
+- **Form Processing**: More reliable form submission handling
+
+#### Technical Changes
+- **Fixed**: Added function existence check for `acf_get_cache()`
+- **Removed**: Custom submit button configuration causing duplicates
+- **Enhanced**: Form structure with better CSS rules
+- **Improved**: Error handling for ACF cache operations
+
 ## [2.0.47] - 2025-01-XX
 
 ### 🔧 Form Structure and Duplicate Handler Fix
