@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.51] - 2025-01-XX
+
+### 🔧 CSS Specificity Fix for Button Styling
+
+#### Fixed
+- **Blue Background Issue**: Override `.ndm-acf-form .acf-form-submit *` styling causing blue background and border
+- **CSS Specificity**: Added higher specificity CSS rule to remove unwanted styling
+- **Button Appearance**: Proper button styling without blue background interference
+- **Visual Clarity**: Clean button appearance without container styling interference
+
+#### Improved
+- **CSS Override**: Proper CSS specificity to override ACF default styling
+- **Button Styling**: Clean button appearance without background or border interference
+- **Visual Consistency**: Consistent button styling throughout the form
+- **Professional Look**: Clean, professional button layout
+
+#### Technical Changes
+- **Added**: CSS rule to override `.ndm-acf-form .acf-form-submit *` styling
+- **Fixed**: Background and border removal with proper specificity
+- **Improved**: CSS organization and specificity handling
+- **Enhanced**: Overall button styling consistency
+
 ## [2.0.50] - 2025-01-XX
 
 ### 🔧 Final Button Layout and Spinner Fix

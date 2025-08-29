@@ -135,6 +135,12 @@
     margin-right: 15px !important;
 }
 
+/* Override acf-form-submit styling that's causing blue background and border */
+.ndm-acf-form .acf-form-submit * {
+    background: transparent !important;
+    border: none !important;
+}
+
 /* Business Categories Grid */
 .ndm-categories-grid {
     display: grid !important;
