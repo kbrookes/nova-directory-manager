@@ -2,6 +2,30 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.49] - 2025-01-XX
+
+### 🔧 Form Layout and Styling Fixes
+
+#### Fixed
+- **Extra Button Issue**: Removed acf-spinner causing duplicate button
+- **Form Actions Layout**: Restructured form actions with proper flexbox layout
+- **Business Categories Grid**: Restored 3-column grid with responsive breakpoints
+- **Red Background Issue**: Fixed CSS causing red background on repeater fields
+- **Button Layout**: Proper spacing and alignment of form action buttons
+
+#### Improved
+- **Form Structure**: Better organization of form elements and actions
+- **Responsive Design**: Proper grid layout for categories on different screen sizes
+- **Button Styling**: Clean button layout with proper spacing
+- **CSS Specificity**: More targeted CSS rules to avoid unintended styling
+
+#### Technical Changes
+- **Fixed**: Removed acf-spinner from form configuration
+- **Enhanced**: Form actions layout with flexbox and space-between
+- **Restored**: Business categories grid with responsive breakpoints
+- **Improved**: CSS specificity for repeater field styling
+- **Fixed**: CSS syntax errors and duplicate rules
+
 ## [2.0.48] - 2025-01-XX
 
 ### 🔧 Fatal Error Fix and Form Cleanup

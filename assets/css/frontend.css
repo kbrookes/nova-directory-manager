@@ -111,6 +111,36 @@
 }
 
 /* Business Form Sections */
+
+/* Form Actions Layout */
+.ndm-form-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 20px !important;
+    padding-top: 20px !important;
+    border-top: 1px solid #e5e5e5 !important;
+}
+
+/* Business Categories Grid */
+.ndm-categories-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+}
+
+@media (max-width: 768px) {
+    .ndm-categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .ndm-categories-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
 .ndm-form-section {
     margin-bottom: 40px;
     padding: 25px;
@@ -471,22 +501,16 @@
     color: #fff !important;
 }
 
-/* Force styling for any ACF add button */
+/* Force styling for ACF add buttons only */
 .ndm-acf-form a[href*="add"],
-.ndm-acf-form .acf-field-repeater a,
-.ndm-acf-form .acf-field-repeater .acf-button,
-.ndm-acf-form a.acf-button,
-.ndm-acf-form .acf-button,
-.ndm-acf-form .acf-field-repeater .acf-button,
-.ndm-acf-form .acf-field-repeater a,
-.ndm-acf-form .acf-field-repeater .acf-repeater-add-row,
-.ndm-acf-form .acf-field-repeater .acf-button,
 .ndm-acf-form .acf-field-repeater a[href*="add"],
 .ndm-acf-form .acf-field-repeater a[href*="Add"],
 .ndm-acf-form .acf-field-repeater a[href*="add-row"],
 .ndm-acf-form .acf-field-repeater a[href*="Add Row"],
 .ndm-acf-form .acf-field-repeater a[href*="social"],
-.ndm-acf-form .acf-field-repeater a[href*="Social"] {
+.ndm-acf-form .acf-field-repeater a[href*="Social"],
+.ndm-acf-form .acf-repeater-add-row,
+.ndm-acf-form .acf-button {
     background: #EB2127 !important;
     color: #fff !important;
     border: none !important;
@@ -501,28 +525,25 @@
 }
 
 .ndm-acf-form a[href*="add"]:hover,
-.ndm-acf-form .acf-field-repeater a:hover,
-.ndm-acf-form .acf-field-repeater .acf-button:hover,
-.ndm-acf-form a.acf-button:hover,
-.ndm-acf-form .acf-button:hover,
-.ndm-acf-form .acf-field-repeater .acf-button:hover,
-.ndm-acf-form .acf-field-repeater a:hover,
-.ndm-acf-form .acf-field-repeater .acf-repeater-add-row:hover,
-.ndm-acf-form .acf-field-repeater .acf-button:hover,
 .ndm-acf-form .acf-field-repeater a[href*="add"]:hover,
 .ndm-acf-form .acf-field-repeater a[href*="Add"]:hover,
 .ndm-acf-form .acf-field-repeater a[href*="add-row"]:hover,
 .ndm-acf-form .acf-field-repeater a[href*="Add Row"]:hover,
 .ndm-acf-form .acf-field-repeater a[href*="social"]:hover,
-.ndm-acf-form .acf-field-repeater a[href*="Social"]:hover {
+.ndm-acf-form .acf-field-repeater a[href*="Social"]:hover,
+.ndm-acf-form .acf-repeater-add-row:hover,
+.ndm-acf-form .acf-button:hover {
     background: #d41b21 !important;
     color: #fff !important;
 }
 
-/* Nuclear option for add buttons */
-.ndm-acf-form .acf-field-repeater *,
-.ndm-acf-form .acf-field-repeater a,
-.ndm-acf-form .acf-field-repeater .acf-button,
+/* Nuclear option for add buttons only */
+.ndm-acf-form .acf-field-repeater a[href*="add"],
+.ndm-acf-form .acf-field-repeater a[href*="Add"],
+.ndm-acf-form .acf-field-repeater a[href*="add-row"],
+.ndm-acf-form .acf-field-repeater a[href*="Add Row"],
+.ndm-acf-form .acf-field-repeater a[href*="social"],
+.ndm-acf-form .acf-field-repeater a[href*="Social"],
 .ndm-acf-form .acf-field-repeater .acf-repeater-add-row {
     background: #EB2127 !important;
     color: #fff !important;
