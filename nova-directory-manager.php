@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.46
+ * Version: 2.0.47
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.46' );
+define( 'NDM_VERSION', '2.0.47' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -130,7 +130,6 @@ class Nova_Directory_Manager {
 		// Removed separate form submission handler - now using ACF form handling
 		add_filter( 'acf/pre_load_post', array( $this, 'restrict_business_access' ), 10, 2 );
 		add_filter( 'map_meta_cap', array( $this, 'restrict_business_capabilities' ), 10, 4 );
-		add_action( 'acf/save_post', array( $this, 'handle_acf_form_save' ), 10, 1 );
 		add_filter( 'acf/pre_update_value', array( $this, 'handle_image_field_update' ), 10, 4 );
 		
 		// Auto-update post title from business name field
@@ -2139,64 +2138,67 @@ class Nova_Directory_Manager {
 		// Output the form
 		?>
 		<div class="ndm-business-edit-form">
-			<!-- Business Categories Section -->
-			<div class="ndm-form-section">
-				<h3><?php _e( 'Business Categories', 'nova-directory-manager' ); ?></h3>
-				<p class="description"><?php _e( 'Select the categories that best describe your business.', 'nova-directory-manager' ); ?></p>
-				
-				<div class="ndm-categories-wrapper">
-					<?php if ( ! empty( $categories ) ) : ?>
-						<div class="ndm-categories-grid">
-							<?php foreach ( $categories as $category ) : ?>
-								<label class="ndm-category-checkbox">
-									<input type="checkbox" 
-										   name="business_categories[]" 
-										   value="<?php echo esc_attr( $category->term_id ); ?>"
-										   <?php checked( in_array( $category->term_id, $current_categories ) ); ?> />
-									<span class="category-name"><?php echo esc_html( $category->name ); ?></span>
-								</label>
-							<?php endforeach; ?>
+			<?php
+			// Double-check security before rendering ACF form
+			$post = get_post( $post_id );
+			if ( ! $post || $post->post_type !== 'business' || $post->post_author != $current_user->ID ) {
+				echo '<p>' . __( 'Business not found or you do not have permission to edit it.', 'nova-directory-manager' ) . '</p>';
+			} else {
+				acf_form( array(
+					'post_id' => $post_id,
+					'post_title' => false, // Hide the title field
+					'post_content' => false, // We don't use post content, only ACF fields
+					'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
+					'form_attributes' => array(
+						'class' => 'ndm-acf-form'
+					),
+					'html_before_fields' => '
+						<div class="ndm-form-notices"></div>
+						<!-- Business Categories Section -->
+						<div class="ndm-form-section">
+							<h3>' . __( 'Business Categories', 'nova-directory-manager' ) . '</h3>
+							<p class="description">' . __( 'Select the categories that best describe your business.', 'nova-directory-manager' ) . '</p>
+							
+							<div class="ndm-categories-wrapper">
+								' . ( ! empty( $categories ) ? '
+									<div class="ndm-categories-grid">
+										' . implode( '', array_map( function( $category ) use ( $current_categories ) {
+											return '<label class="ndm-category-checkbox">
+												<input type="checkbox" 
+													   name="business_categories[]" 
+													   value="' . esc_attr( $category->term_id ) . '"
+													   ' . checked( in_array( $category->term_id, $current_categories ), true, false ) . ' />
+												<span class="category-name">' . esc_html( $category->name ) . '</span>
+											</label>';
+										}, $categories ) ) . '
+									</div>
+								' : '<p>' . __( 'No categories available.', 'nova-directory-manager' ) . '</p>' ) . '
+							</div>
 						</div>
-					<?php else : ?>
-						<p><?php _e( 'No categories available.', 'nova-directory-manager' ); ?></p>
-					<?php endif; ?>
-				</div>
-			</div>
-
-			<!-- ACF Fields Section -->
-			<div class="ndm-form-section">
-				<h3><?php _e( 'Business Details', 'nova-directory-manager' ); ?></h3>
-				<?php
-				// Double-check security before rendering ACF form
-				$post = get_post( $post_id );
-				if ( ! $post || $post->post_type !== 'business' || $post->post_author != $current_user->ID ) {
-					echo '<p>' . __( 'Business not found or you do not have permission to edit it.', 'nova-directory-manager' ) . '</p>';
-				} else {
-					acf_form( array(
-						'post_id' => $post_id,
-						'post_title' => false, // Hide the title field
-						'post_content' => false, // We don't use post content, only ACF fields
-						'field_groups' => array( 'group_683a78bc7efb6' ), // Business fields group
-						'form_attributes' => array(
-							'class' => 'ndm-acf-form'
-						),
-						'html_before_fields' => '<div class="ndm-form-notices"></div>',
-						'html_after_fields' => '<div class="ndm-form-actions">
+						
+						<!-- Business Details Section -->
+						<div class="ndm-form-section">
+							<h3>' . __( 'Business Details', 'nova-directory-manager' ) . '</h3>
+					',
+					'html_after_fields' => '
+						</div>
+						<div class="ndm-form-actions">
 							<a href="' . esc_url( home_url( '/membership/member-dashboard/' ) ) . '" class="button button-secondary" style="background: #0073aa !important; color: #fff !important; border: 2px solid #0073aa !important; padding: 12px 24px !important; border-radius: 6px !important; font-size: 16px !important; font-weight: 600 !important; text-decoration: none !important; display: inline-block !important; margin-right: 15px !important;">
 								' . __( 'Back to Dashboard', 'nova-directory-manager' ) . '
 							</a>
-						</div>',
-						'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
-						'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
-						'return' => add_query_arg( 'updated', '1', get_permalink() ),
-						'uploader' => 'wp', // Use WordPress media uploader
-						'honeypot' => true, // Enable honeypot protection
-						'html_updated_message' => '<div class="acf-notice -success"><p>%s</p></div>',
-						'html_submit_button' => '<input type="submit" class="acf-button button button-primary button-large" value="%s" />',
-					) );
-				}
-				?>
-			</div>
+						</div>
+					',
+					'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
+					'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
+					'return' => add_query_arg( 'updated', '1', get_permalink() ),
+					'uploader' => 'wp', // Use WordPress media uploader
+					'honeypot' => true, // Enable honeypot protection
+					'html_updated_message' => '<div class="acf-notice -success"><p>%s</p></div>',
+					'html_submit_button' => '<input type="submit" class="acf-button button button-primary button-large" value="%s" />',
+					'html_submit_spinner' => '<span class="acf-spinner"></span>',
+				) );
+			}
+			?>
 		</div>
 		<?php
 

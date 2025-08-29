@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.47] - 2025-01-XX
+
+### 🔧 Form Structure and Duplicate Handler Fix
+
+#### Fixed
+- **Critical Error on Save**: Duplicate ACF save handlers causing conflicts
+- **Form Structure Issues**: Categories now properly integrated within ACF form
+- **HTML Structure Problems**: Fixed malformed HTML in form generation
+- **Extra Button Issue**: Removed duplicate button generation
+
+#### Improved
+- **Form Integration**: Categories now properly included within ACF form structure
+- **Handler Registration**: Removed duplicate ACF save handler registration
+- **HTML Generation**: Improved HTML structure for better form rendering
+- **Form Processing**: Cleaner form submission handling
+
+#### Technical Changes
+- **Fixed**: Removed duplicate `acf/save_post` handler registration
+- **Enhanced**: Category integration within ACF form using `html_before_fields`
+- **Improved**: HTML structure generation for better form rendering
+- **Added**: Proper form spinner configuration
+
 ## [2.0.46] - 2025-01-XX
 
 ### 🔧 Critical Form Submission Fix - ACF Form Structure
