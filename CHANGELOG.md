@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.46] - 2025-01-XX
+
+### 🔧 Critical Form Submission Fix - ACF Form Structure
+
+#### Fixed
+- **Form Submission Issues**: No updates working in frontend editor (images, content, opening hours)
+- **Form Structure Problem**: Custom form wrapper interfering with ACF form processing
+- **Category Updates**: Category changes not being processed
+- **ACF Form Processing**: ACF form submission not working due to nested forms
+
+#### Improved
+- **Form Structure**: Removed custom form wrapper to let ACF handle form submission
+- **Category Processing**: Moved category updates to ACF save handler
+- **Form Integration**: Proper integration between categories and ACF fields
+- **Submission Handling**: Single form submission for all business updates
+
+#### Technical Changes
+- **Removed**: Custom form wrapper that was interfering with ACF
+- **Enhanced**: ACF save handler to process category updates
+- **Removed**: Separate form submission handler
+- **Fixed**: Form structure to allow proper ACF form processing
+
 ## [2.0.45] - 2025-01-XX
 
 ### 🖼️ ACF Image Field Fix - Frontend Image Upload
