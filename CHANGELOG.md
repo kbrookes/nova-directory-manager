@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.52] - 2025-01-XX
+
+### 🔧 CSS Cleanup - Remove Problematic Button Styling
+
+#### Fixed
+- **CSS Order Issue**: Removed problematic CSS blocks that were overriding each other
+- **Blue Background Problem**: Eliminated CSS rules causing blue background on form elements
+- **Button Styling Conflicts**: Removed conflicting CSS rules affecting button appearance
+- **CSS Specificity Issues**: Cleaned up CSS specificity conflicts
+
+#### Improved
+- **CSS Organization**: Removed unnecessary and conflicting CSS rules
+- **Button Styling**: Clean button appearance without interference
+- **Code Maintainability**: Simplified CSS structure for better maintenance
+- **Visual Consistency**: Consistent button styling throughout the form
+
+#### Technical Changes
+- **Removed**: Problematic CSS block at line 330-345 causing blue background
+- **Removed**: Override CSS rule at line 139 that was being overridden
+- **Cleaned**: CSS structure to eliminate conflicts
+- **Simplified**: CSS organization for better maintainability
+
 ## [2.0.51] - 2025-01-XX
 
 ### 🔧 CSS Specificity Fix for Button Styling
