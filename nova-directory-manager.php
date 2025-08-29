@@ -3,7 +3,7 @@
  * Plugin Name: Nova Directory Manager
  * Plugin URI: https://novastrategic.co
  * Description: Manages business directory registrations with Fluent Forms integration, custom user roles, and automatic post creation with frontend editing capabilities.
- * Version: 2.0.44
+ * Version: 2.0.45
  * Requires at least: 5.0
  * Tested up to: 6.4
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NDM_VERSION', '2.0.44' );
+define( 'NDM_VERSION', '2.0.45' );
 define( 'NDM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NDM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'NDM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -130,6 +130,8 @@ class Nova_Directory_Manager {
 		add_action( 'wp_loaded', array( $this, 'handle_business_form_submission' ) );
 		add_filter( 'acf/pre_load_post', array( $this, 'restrict_business_access' ), 10, 2 );
 		add_filter( 'map_meta_cap', array( $this, 'restrict_business_capabilities' ), 10, 4 );
+		add_action( 'acf/save_post', array( $this, 'handle_acf_form_save' ), 10, 1 );
+		add_filter( 'acf/pre_update_value', array( $this, 'handle_image_field_update' ), 10, 4 );
 		
 		// Auto-update post title from business name field
 		add_action( 'acf/save_post', array( $this, 'update_post_title_from_business_name' ), 20, 1 );
@@ -2191,6 +2193,10 @@ class Nova_Directory_Manager {
 							'submit_value' => __( 'Update Business', 'nova-directory-manager' ),
 							'updated_message' => __( 'Business updated successfully!', 'nova-directory-manager' ),
 							'return' => add_query_arg( 'updated', '1', get_permalink() ),
+							'uploader' => 'wp', // Use WordPress media uploader
+							'honeypot' => true, // Enable honeypot protection
+							'html_updated_message' => '<div class="acf-notice -success"><p>%s</p></div>',
+							'html_submit_button' => '<input type="submit" class="acf-button button button-primary button-large" value="%s" />',
 						) );
 					}
 					?>
@@ -2472,6 +2478,71 @@ class Nova_Directory_Manager {
 	}
 
 	/**
+	 * Handle image field updates to ensure proper processing.
+	 *
+	 * @param mixed  $value   The field value.
+	 * @param mixed  $post_id The post ID.
+	 * @param string $field   The field name.
+	 * @param mixed  $original The original value.
+	 * @return mixed The processed value.
+	 */
+	public function handle_image_field_update( $value, $post_id, $field, $original ) {
+		// Only process business post types
+		if ( get_post_type( $post_id ) !== 'business' ) {
+			return $value;
+		}
+
+		// Only process image fields
+		if ( $field['type'] !== 'image' ) {
+			return $value;
+		}
+
+		// Log the image field update for debugging
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'NDM: Image field update - Field: ' . $field['name'] . ', Post: ' . $post_id . ', Value: ' . print_r( $value, true ) );
+		}
+
+		// If value is empty, ensure we're properly clearing the field
+		if ( empty( $value ) ) {
+			delete_field( $field['name'], $post_id );
+			return $value;
+		}
+
+		// Ensure the value is properly formatted for ACF image fields
+		if ( is_array( $value ) && isset( $value['ID'] ) ) {
+			// Value is already in the correct format
+			return $value;
+		} elseif ( is_numeric( $value ) ) {
+			// Convert numeric ID to ACF image array format
+			$attachment = get_post( $value );
+			if ( $attachment && $attachment->post_type === 'attachment' ) {
+				return array(
+					'ID' => $value,
+					'url' => wp_get_attachment_url( $value ),
+					'title' => $attachment->post_title,
+					'filename' => basename( get_attached_file( $value ) ),
+					'filesize' => filesize( get_attached_file( $value ) ),
+					'alt' => get_post_meta( $value, '_wp_attachment_image_alt', true ),
+					'author' => $attachment->post_author,
+					'description' => $attachment->post_content,
+					'caption' => $attachment->post_excerpt,
+					'name' => $attachment->post_name,
+					'date' => $attachment->post_date,
+					'modified' => $attachment->post_modified,
+					'mime_type' => $attachment->post_mime_type,
+					'type' => $attachment->post_mime_type,
+					'icon' => wp_mime_type_icon( $value ),
+					'width' => get_post_meta( $value, '_wp_attachment_metadata', true )['width'] ?? '',
+					'height' => get_post_meta( $value, '_wp_attachment_metadata', true )['height'] ?? '',
+					'sizes' => wp_get_attachment_image_sizes( $value ),
+				);
+			}
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Handle ACF form save.
 	 *
 	 * @param int $post_id Post ID.
@@ -2524,6 +2595,15 @@ class Nova_Directory_Manager {
 
 		// Log successful save
 		error_log( 'NDM: ACF form save completed successfully for business ' . $post_id . ' by user ' . $current_user->ID );
+
+		// Force refresh of ACF cache for this post
+		acf_flush_value_cache( $post_id );
+		
+		// Clear any object cache for this post
+		clean_post_cache( $post_id );
+		
+		// Force ACF to reload field values
+		acf_get_cache( 'acf_get_field_groups', array() );
 	}
 
 	/**

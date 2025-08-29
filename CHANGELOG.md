@@ -2,6 +2,28 @@
 
 All notable changes to the Nova Directory Manager plugin will be documented in this file.
 
+## [2.0.45] - 2025-01-XX
+
+### 🖼️ ACF Image Field Fix - Frontend Image Upload
+
+#### Fixed
+- **Image Upload Issues**: Logo and hero image uploads not working in frontend editor
+- **Image Field Processing**: ACF image fields not properly updating on form submission
+- **Cache Issues**: Image changes not persisting after form submission
+- **Uploader Configuration**: WordPress media uploader not properly configured
+
+#### Improved
+- **ACF Form Configuration**: Enhanced ACF form settings for proper image handling
+- **Image Field Processing**: Added custom handler for image field updates
+- **Cache Management**: Proper cache clearing after image updates
+- **Uploader Integration**: Better integration with WordPress media uploader
+
+#### Technical Changes
+- **Enhanced**: ACF form configuration with proper uploader settings
+- **Added**: `handle_image_field_update()` function for image field processing
+- **Added**: Cache clearing and ACF cache refresh after form submission
+- **Improved**: Image field value formatting and validation
+
 ## [2.0.44] - 2025-01-XX
 
 ### 🔒 Critical Security Fix - Business Access Control
